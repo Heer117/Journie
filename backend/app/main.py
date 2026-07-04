@@ -32,8 +32,7 @@ async def health_check():
     """Used by Render (or any uptime check) to confirm the service is alive."""
     return {"status": "ok"}
  
- 
-# Routers get plugged in here as you build them, e.g.:
-# from app.routes import auth_routes, chat_routes
-# app.include_router(auth_routes.router, prefix="/auth", tags=["auth"])
-# app.include_router(chat_routes.router, prefix="/chat", tags=["chat"])
+from app.routes import chat_routes, auth_routes
+
+app.include_router(chat_routes.router, prefix="/chat", tags=["chat"])
+app.include_router(auth_routes.router, prefix="/auth", tags=["auth"])
