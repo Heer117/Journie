@@ -3,8 +3,8 @@ from app.config import settings
  
 # One client for the whole app's lifetime — created once at import time.
 # Motor manages a connection pool internally, so we don't reconnect per-request.
-client = AsyncIOMotorClient(settings.mongo_uri)
-db = client[settings.mongo_db_name]
+client = AsyncIOMotorClient(settings.mongodb_uri)
+db = client[settings.mongodb_db_name]
  
 # Collections — one line per collection keeps route/service files clean,
 # they just do `from app.db import users_collection` etc.

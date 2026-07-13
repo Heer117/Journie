@@ -6,7 +6,7 @@ _client = Groq(api_key=settings.groq_api_key)
 
 def get_chat_completion(messages: list[dict]) -> str:
     response = _client.chat.completions.create(
-        model=settings.groq_model,
+        model=settings.groq_model_name,
         messages=messages,
         temperature=0.7,
     )

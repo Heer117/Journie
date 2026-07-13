@@ -3,12 +3,12 @@ from pydantic_settings import BaseSettings
  
 class Settings(BaseSettings):
     # Mongo
-    mongo_uri: str
-    mongo_db_name: str = "tripmind"
+    mongodb_uri: str
+    mongodb_db_name: str = "tripmind"
  
     # Groq LLM
     groq_api_key: str
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model_name: str = "llama-3.3-70b-versatile"
  
     # Auth (used from Day 4 onward)
     jwt_secret: str = "change-me-in-env"
