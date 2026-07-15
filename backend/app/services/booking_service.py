@@ -104,10 +104,13 @@ async def get_user_bookings(user_id: str, status: str = "active") -> list[dict]:
     async for booking in cursor:
         booking["id"] = str(booking["_id"])
         
-        # Load and attach document check (fall back to compute if missing)
-        from app.services.document_check_service import get_booking_document_check
-        check = await get_booking_document_check(user_id, booking["id"], booking)
-        booking["document_check"] = check
+        # Load and attach document check (fall back to compute if missing) only if not cancelled
+        if booking.get("status") != "cancelled":
+            from app.services.document_check_service import get_booking_document_check
+            check = await get_booking_document_check(user_id, booking["id"], booking)
+            booking["document_check"] = check
+        else:
+            booking["document_check"] = None
         
         bookings.append(booking)
     return bookings

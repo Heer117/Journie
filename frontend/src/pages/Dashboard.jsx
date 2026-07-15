@@ -368,7 +368,7 @@ function Dashboard() {
                     </div>
 
                     {/* Document Risk Monitor Status */}
-                    {booking.document_check && (
+                    {booking.status !== "cancelled" && booking.document_check && (
                       <div className="pt-2 border-t border-gray-100 mt-2 space-y-1.5">
                         <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded border border-gray-100">
                           <span className="font-semibold text-gray-500">Document Monitor:</span>
