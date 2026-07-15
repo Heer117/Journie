@@ -17,6 +17,11 @@ async def create_booking(request: BookingCreate, user_id: str = Depends(get_curr
     return BookingResponse(**booking)
 
 @router.get("/", response_model=List[BookingResponse])
-async def get_bookings(user_id: str = Depends(get_current_user)):
-    bookings = await booking_service.get_user_bookings(user_id)
+async def get_bookings(status: Optional[str] = "active", user_id: str = Depends(get_current_user)):
+    bookings = await booking_service.get_user_bookings(user_id, status)
     return [BookingResponse(**b) for b in bookings]
+
+@router.delete("/{booking_id}")
+async def delete_booking(booking_id: str, user_id: str = Depends(get_current_user)):
+    await booking_service.delete_user_booking(user_id, booking_id)
+    return {"detail": "Booking cancelled successfully"}

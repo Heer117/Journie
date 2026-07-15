@@ -1,7 +1,7 @@
 import datetime
 from bson import ObjectId
 from fastapi import HTTPException, status
-from app.db import hotels_collection, bookings_collection
+from app.db import hotels_collection, bookings_collection, document_checks_collection
 from app.schemas.booking_schema import BookingCreate
 
 async def list_hotels(destination: str = None) -> list[dict]:
@@ -71,17 +71,70 @@ async def create_user_booking(user_id: str, booking_data: BookingCreate) -> dict
         "start_date": booking_data.start_date,
         "end_date": booking_data.end_date,
         "passport_expiry": booking_data.passport_expiry,
+        "status": "active",
         "created_at": datetime.datetime.utcnow().isoformat()
     }
     
     result = await bookings_collection.insert_one(booking_doc)
-    booking_doc["id"] = str(result.inserted_id)
+    booking_id = str(result.inserted_id)
+    booking_doc["id"] = booking_id
+    
+    # Run the document check and attach it
+    from app.services.document_check_service import perform_document_check
+    check = await perform_document_check(
+        user_id=user_id,
+        booking_id=booking_id,
+        destination=booking_data.destination,
+        end_date_str=booking_data.end_date,
+        passport_expiry_str=booking_data.passport_expiry
+    )
+    booking_doc["document_check"] = check
     return booking_doc
 
-async def get_user_bookings(user_id: str) -> list[dict]:
-    cursor = bookings_collection.find({"user_id": user_id}).sort("created_at", -1)
+async def get_user_bookings(user_id: str, status: str = "active") -> list[dict]:
+    query = {"user_id": user_id}
+    if status == "active":
+        query["status"] = {"$in": ["active", None]}
+    elif status == "cancelled":
+        query["status"] = "cancelled"
+    # if status is "all", we retrieve all bookings without status filter
+    
+    cursor = bookings_collection.find(query).sort("created_at", -1)
     bookings = []
     async for booking in cursor:
         booking["id"] = str(booking["_id"])
+        
+        # Load and attach document check (fall back to compute if missing)
+        from app.services.document_check_service import get_booking_document_check
+        check = await get_booking_document_check(user_id, booking["id"], booking)
+        booking["document_check"] = check
+        
         bookings.append(booking)
     return bookings
+
+async def delete_user_booking(user_id: str, booking_id: str) -> None:
+    if not ObjectId.is_valid(booking_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid booking ID format.",
+        )
+        
+    booking = await bookings_collection.find_one({
+        "_id": ObjectId(booking_id),
+        "user_id": user_id
+    })
+    
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking not found.",
+        )
+        
+    # Soft delete: update status to cancelled
+    await bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {"status": "cancelled"}}
+    )
+    
+    # Clean up associated document check entries for that booking
+    await document_checks_collection.delete_many({"booking_id": booking_id})

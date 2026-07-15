@@ -4,7 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import ChatWindow from "./components/ChatWindow";
+import FloatingChatWidget from "./components/FloatingChatWidget";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
 import GroupPlanner from "./pages/GroupPlanner";
@@ -23,17 +23,6 @@ function App() {
               <ProtectedRoute>
                 <AppLayout>
                   <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <ChatWindow />
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -63,6 +52,9 @@ function App() {
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        
+        {/* Global Floating Assistant */}
+        <FloatingChatWidget />
       </BrowserRouter>
     </AuthProvider>
   );

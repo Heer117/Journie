@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, CreditCard, Compass } from "lucide-react";
+import { Calendar, CreditCard, Compass, CheckCircle2, AlertTriangle, XCircle, Trash2 } from "lucide-react";
 import apiClient from "../api/client";
 
 const DESTINATION_IMAGES = {
@@ -36,21 +36,48 @@ function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  
+  // Show Cancelled Filter State
+  const [showCancelled, setShowCancelled] = useState(false);
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
-  async function fetchBookings() {
+  async function fetchBookings(includeCancelled = showCancelled) {
     setLoadingBookings(true);
     try {
-      const response = await apiClient.get("/bookings/");
+      const response = await apiClient.get(
+        includeCancelled ? "/bookings/?status=all" : "/bookings/?status=active"
+      );
       setBookings(response.data);
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
       setError("Failed to load your bookings.");
     } finally {
       setLoadingBookings(false);
+    }
+  }
+
+  function handleToggleCancelled(e) {
+    const checked = e.target.checked;
+    setShowCancelled(checked);
+    fetchBookings(checked);
+  }
+
+  async function handleCancelBooking(bookingId) {
+    setError("");
+    setSuccess("");
+    if (!window.confirm("Are you sure you want to cancel this booking?")) {
+      return;
+    }
+    try {
+      await apiClient.delete(`/bookings/${bookingId}`);
+      setSuccess("Booking cancelled successfully!");
+      fetchBookings();
+    } catch (err) {
+      console.error("Failed to cancel booking:", err);
+      setError(err.response?.data?.detail || "Failed to cancel booking. Please try again.");
     }
   }
 
@@ -278,7 +305,18 @@ function Dashboard() {
 
         {/* Bookings List */}
         <div className="lg:col-span-2 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Your Scheduled Trips</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-2">
+            <h3 className="text-lg font-semibold text-gray-900">Your Scheduled Trips</h3>
+            <label className="inline-flex items-center text-xs font-semibold text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCancelled}
+                onChange={handleToggleCancelled}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+              />
+              Show cancelled trips
+            </label>
+          </div>
 
           {loadingBookings ? (
             <div className="flex items-center justify-center p-12 bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -329,15 +367,46 @@ function Dashboard() {
                       </span>
                     </div>
 
-                    {/* Feature 1 Placeholder Spot */}
-                    <div className="pt-2 border-t border-gray-100 mt-2">
-                      <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded border border-gray-100">
-                        <span className="font-semibold text-gray-500">Document Monitor:</span>
-                        <span className="text-blue-600 font-semibold px-2 py-0.5 bg-blue-50 rounded border border-blue-100">
-                          Seeded / Pending
-                        </span>
+                    {/* Document Risk Monitor Status */}
+                    {booking.document_check && (
+                      <div className="pt-2 border-t border-gray-100 mt-2 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded border border-gray-100">
+                          <span className="font-semibold text-gray-500">Document Monitor:</span>
+                          {booking.document_check.status === "Ready" ? (
+                            <span className="flex items-center gap-1 text-green-600 font-semibold px-2 py-0.5 bg-green-50 rounded border border-green-100">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                              Ready
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-red-600 font-semibold px-2 py-0.5 bg-red-50 rounded border border-red-100">
+                              <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                              Action Needed
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-snug line-clamp-2" title={booking.document_check.reason}>
+                          {booking.document_check.reason}
+                        </p>
                       </div>
-                    </div>
+                    )}
+                  </div>
+
+                  {/* Card Footer (Actions/Status) */}
+                  <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-end items-center">
+                    {booking.status === "cancelled" ? (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-red-600 px-2 py-1 bg-red-50 rounded border border-red-100 w-full justify-center">
+                        <XCircle className="w-3.5 h-3.5" />
+                        Cancelled
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleCancelBooking(booking.id)}
+                        className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-white hover:bg-red-600 px-2.5 py-1.5 rounded border border-red-200 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Cancel Booking
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

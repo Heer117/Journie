@@ -46,6 +46,10 @@ class BookingCreate(BaseModel):
             raise ValueError("Passport expiry date must be in the future.")
         return self
 
+class DocumentCheckResponse(BaseModel):
+    status: str
+    reason: str
+
 class BookingResponse(BaseModel):
     id: str
     user_id: str
@@ -56,3 +60,5 @@ class BookingResponse(BaseModel):
     end_date: str
     passport_expiry: str
     created_at: str
+    status: Optional[str] = "active"
+    document_check: Optional[DocumentCheckResponse] = None

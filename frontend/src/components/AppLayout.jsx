@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, Shield, Users, Plane, LogOut } from "lucide-react";
+import { LayoutDashboard, Shield, Users, Plane, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 function AppLayout({ children }) {
@@ -9,7 +9,6 @@ function AppLayout({ children }) {
 
   const menuItems = [
     { name: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: "AI Assistant", path: "/chat", icon: <MessageSquare className="w-5 h-5" /> },
     { name: "Risk Monitor", path: "/documents", icon: <Shield className="w-5 h-5" /> },
     { name: "Consensus Planner", path: "/group-planner", icon: <Users className="w-5 h-5" /> },
   ];
