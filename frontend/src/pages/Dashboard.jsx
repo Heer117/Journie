@@ -48,7 +48,7 @@ function Dashboard() {
     setLoadingBookings(true);
     try {
       const response = await apiClient.get(
-        includeCancelled ? "/bookings/?status=all" : "/bookings/?status=active"
+        includeCancelled ? "/bookings/?status=cancelled" : "/bookings/?status=active"
       );
       setBookings(response.data);
     } catch (err) {
@@ -306,7 +306,9 @@ function Dashboard() {
         {/* Bookings List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-2">
-            <h3 className="text-lg font-semibold text-gray-900">Your Scheduled Trips</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {showCancelled ? "Your Cancelled Trips" : "Your Scheduled Trips"}
+            </h3>
             <label className="inline-flex items-center text-xs font-semibold text-gray-600 cursor-pointer">
               <input
                 type="checkbox"

@@ -48,7 +48,7 @@ function GroupPlanner() {
     setLoadingHistory(true);
     try {
       const response = await apiClient.get(
-        includeCancelled ? "/group-trips/?status=all" : "/group-trips/?status=active"
+        includeCancelled ? "/group-trips/?status=cancelled" : "/group-trips/?status=active"
       );
       setHistory(response.data);
     } catch (err) {
@@ -461,7 +461,9 @@ function GroupPlanner() {
         {/* Right Side: History Sidebar */}
         <div className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Past Plans</h3>
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+              {showCancelledPlans ? "Cancelled Plans" : "Past Plans"}
+            </h3>
             <label className="inline-flex items-center text-[10px] font-semibold text-gray-500 cursor-pointer">
               <input
                 type="checkbox"
