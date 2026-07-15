@@ -42,12 +42,16 @@ function Signup() {
     if (!/[a-zA-Z]/.test(val) || !/[0-9]/.test(val)) {
       return "Password must contain both letters and numbers";
     }
+    if (!/[^a-zA-Z0-9]/.test(val)) {
+      return "Password must contain at least one special character";
+    }
     return "";
   };
 
   // Dynamic state checks for password criteria
   const isMinLength = password.length >= 8;
   const hasLetterAndNumber = /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
+  const hasSpecialChar = /[^a-zA-Z0-9]/.test(password);
 
   const handleNameChange = (e) => {
     const val = e.target.value;
@@ -226,6 +230,17 @@ function Signup() {
                 )}
                 <span className={hasLetterAndNumber ? "text-green-700 font-medium" : "text-gray-500"}>
                   Contains both letters and numbers
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-1.5 text-xs">
+                {hasSpecialChar ? (
+                  <Check className="w-4 h-4 text-green-600 shrink-0" />
+                ) : (
+                  <Circle className="w-4 h-4 text-gray-300 shrink-0" />
+                )}
+                <span className={hasSpecialChar ? "text-green-700 font-medium" : "text-gray-500"}>
+                  Contains at least one special character
                 </span>
               </div>
             </div>
