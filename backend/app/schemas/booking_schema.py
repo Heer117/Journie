@@ -11,12 +11,18 @@ class HotelResponse(BaseModel):
     description: str
     tags: List[str]
 
+class BookedForInput(BaseModel):
+    name: str
+    phone: str
+    relation: Optional[str] = None
+
 class BookingCreate(BaseModel):
     hotel_id: str
     destination: str
     start_date: str  # YYYY-MM-DD
     end_date: str    # YYYY-MM-DD
     passport_expiry: str  # YYYY-MM-DD
+    booked_for: Optional[BookedForInput] = None
 
     @field_validator('start_date', 'end_date', 'passport_expiry')
     @classmethod
@@ -62,3 +68,4 @@ class BookingResponse(BaseModel):
     created_at: str
     status: Optional[str] = "active"
     document_check: Optional[DocumentCheckResponse] = None
+    booked_for: Optional[BookedForInput] = None

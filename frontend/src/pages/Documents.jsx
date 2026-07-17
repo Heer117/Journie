@@ -99,6 +99,11 @@ function Documents() {
                       <div>
                         <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Booking Reference</h4>
                         <p className="text-xs text-gray-500">ID: {booking.id}</p>
+                        {booking.booked_for && (
+                          <p className="text-xs font-semibold text-blue-600 mt-1">
+                            Booked for: {booking.booked_for.name} ({booking.booked_for.relation || "Guest"})
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center">
                         {isReady ? (

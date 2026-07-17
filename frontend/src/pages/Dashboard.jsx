@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, CreditCard, Compass, CheckCircle2, AlertTriangle, XCircle, Trash2 } from "lucide-react";
+import { Calendar, CreditCard, Compass, CheckCircle2, AlertTriangle, XCircle, Trash2, Users } from "lucide-react";
 import apiClient from "../api/client";
 
 const DESTINATION_IMAGES = {
@@ -22,6 +22,13 @@ function Dashboard() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [passportExpiry, setPassportExpiry] = useState("");
+
+  // Overlap & On-Behalf-Of State
+  const [overlapWarning, setOverlapWarning] = useState("");
+  const [bookForSomeoneElse, setBookForSomeoneElse] = useState(false);
+  const [bookedForName, setBookedForName] = useState("");
+  const [bookedForPhone, setBookedForPhone] = useState("");
+  const [bookedForRelation, setBookedForRelation] = useState("");
   
   // Inline Form Validation Errors
   const [formErrors, setFormErrors] = useState({
@@ -86,6 +93,7 @@ function Dashboard() {
     setSelectedDest(dest);
     setSelectedHotel("");
     setHotels([]);
+    setOverlapWarning("");
     
     if (!dest) return;
 
@@ -114,6 +122,13 @@ function Dashboard() {
     if (!selectedDest || !selectedHotel || !startDate || !endDate || !passportExpiry) {
       setError("Please fill out all fields.");
       return;
+    }
+
+    if (bookForSomeoneElse) {
+      if (!bookedForName.trim() || !bookedForPhone.trim()) {
+        setError("Please enter the guest's Name and Phone Number.");
+        return;
+      }
     }
 
     // Front-end date validations
@@ -155,13 +170,23 @@ function Dashboard() {
 
     setSubmitting(true);
     try {
-      await apiClient.post("/bookings/", {
+      const payload = {
         hotel_id: selectedHotel,
         destination: selectedDest,
         start_date: startDate,
         end_date: endDate,
         passport_expiry: passportExpiry,
-      });
+      };
+
+      if (bookForSomeoneElse) {
+        payload.booked_for = {
+          name: bookedForName.trim(),
+          phone: bookedForPhone.trim(),
+          relation: bookedForRelation.trim() || null
+        };
+      }
+
+      await apiClient.post("/bookings/", payload);
 
       setSuccess("Trip booked successfully!");
       // Reset form
@@ -171,6 +196,11 @@ function Dashboard() {
       setEndDate("");
       setPassportExpiry("");
       setHotels([]);
+      setOverlapWarning("");
+      setBookForSomeoneElse(false);
+      setBookedForName("");
+      setBookedForPhone("");
+      setBookedForRelation("");
       setFormErrors({
         startDate: "",
         endDate: "",
@@ -181,7 +211,12 @@ function Dashboard() {
       fetchBookings();
     } catch (err) {
       console.error("Failed to book trip:", err);
-      setError(err.response?.data?.detail || "Booking failed. Please try again.");
+      const detail = err.response?.data?.detail;
+      if (typeof detail === "string" && detail.includes("overlaps these dates")) {
+        setOverlapWarning(detail);
+      } else {
+        setError(detail || "Booking failed. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -198,6 +233,29 @@ function Dashboard() {
           
           {error && <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>}
           {success && <div className="p-3 mb-4 text-sm text-green-600 bg-green-50 rounded-lg border border-green-100">{success}</div>}
+
+          {overlapWarning && (
+            <div className="p-4 mb-4 text-sm bg-amber-50 rounded-lg border border-amber-200 text-amber-900 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="font-medium leading-normal">{overlapWarning}</p>
+              </div>
+              <div className="border-t border-amber-200 pt-2 flex items-center">
+                <label className="inline-flex items-center text-xs font-bold uppercase tracking-wider text-amber-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={bookForSomeoneElse}
+                    onChange={(e) => {
+                      setBookForSomeoneElse(e.target.checked);
+                      setError("");
+                    }}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500 mr-2"
+                  />
+                  Booking for someone else?
+                </label>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleBookTrip} className="space-y-4">
             <div>
@@ -219,7 +277,10 @@ function Dashboard() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Hotel</label>
               <select
                 value={selectedHotel}
-                onChange={(e) => setSelectedHotel(e.target.value)}
+                onChange={(e) => {
+                  setSelectedHotel(e.target.value);
+                  setOverlapWarning("");
+                }}
                 required
                 disabled={!selectedDest || loadingHotels}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
@@ -244,6 +305,7 @@ function Dashboard() {
                   onChange={(e) => {
                     setStartDate(e.target.value);
                     setFormErrors(prev => ({ ...prev, startDate: "" }));
+                    setOverlapWarning("");
                   }}
                   required
                   className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${
@@ -262,6 +324,7 @@ function Dashboard() {
                   onChange={(e) => {
                     setEndDate(e.target.value);
                     setFormErrors(prev => ({ ...prev, endDate: "" }));
+                    setOverlapWarning("");
                   }}
                   required
                   className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${
@@ -282,6 +345,7 @@ function Dashboard() {
                 onChange={(e) => {
                   setPassportExpiry(e.target.value);
                   setFormErrors(prev => ({ ...prev, passportExpiry: "" }));
+                  setOverlapWarning("");
                 }}
                 required
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${
@@ -292,6 +356,44 @@ function Dashboard() {
                 <p className="text-red-600 text-xs mt-1">{formErrors.passportExpiry}</p>
               )}
             </div>
+
+            {overlapWarning && bookForSomeoneElse && (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3 animate-in fade-in duration-200">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Guest Information</h4>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Guest Name</label>
+                  <input
+                    type="text"
+                    value={bookedForName}
+                    onChange={(e) => setBookedForName(e.target.value)}
+                    placeholder="e.g. Alice Smith"
+                    required={bookForSomeoneElse}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Guest Phone Number</label>
+                  <input
+                    type="text"
+                    value={bookedForPhone}
+                    onChange={(e) => setBookedForPhone(e.target.value)}
+                    placeholder="e.g. +1 555-0199"
+                    required={bookForSomeoneElse}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Relation / Notes (Optional)</label>
+                  <input
+                    type="text"
+                    value={bookedForRelation}
+                    onChange={(e) => setBookedForRelation(e.target.value)}
+                    placeholder="e.g. Spouse, Business partner"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -368,6 +470,15 @@ function Dashboard() {
                         <b>Passport Expiry:</b> {booking.passport_expiry}
                       </span>
                     </div>
+
+                    {booking.booked_for && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Users className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                        <span>
+                          <b>Booked for:</b> {booking.booked_for.name} ({booking.booked_for.relation || "Guest"})
+                        </span>
+                      </div>
+                    )}
 
                     {/* Document Risk Monitor Status */}
                     {booking.status !== "cancelled" && booking.document_check && (

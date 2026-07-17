@@ -63,6 +63,25 @@ async def create_user_booking(user_id: str, booking_data: BookingCreate) -> dict
             detail="Passport expiry date must be in the future.",
         )
         
+    # Date overlap check: only if booking for self
+    if not booking_data.booked_for:
+        active_bookings_cursor = bookings_collection.find({
+            "user_id": user_id,
+            "status": {"$in": ["active", None]}
+        })
+        async for b in active_bookings_cursor:
+            try:
+                existing_start = datetime.datetime.strptime(b["start_date"], "%Y-%m-%d").date()
+                existing_end = datetime.datetime.strptime(b["end_date"], "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            
+            if start_dt.date() < existing_end and end_dt.date() > existing_start:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"You already have a booking from {b['start_date']} to {b['end_date']} that overlaps these dates."
+                )
+
     booking_doc = {
         "user_id": user_id,
         "hotel_id": booking_data.hotel_id,
@@ -74,6 +93,9 @@ async def create_user_booking(user_id: str, booking_data: BookingCreate) -> dict
         "status": "active",
         "created_at": datetime.datetime.utcnow().isoformat()
     }
+    
+    if booking_data.booked_for:
+        booking_doc["booked_for"] = booking_data.booked_for.model_dump()
     
     result = await bookings_collection.insert_one(booking_doc)
     booking_id = str(result.inserted_id)

@@ -1,6 +1,46 @@
 # Journie Progress Log
 
-## Status: Day 7 of 8 (Phase 5 Complete)
+## Status: Phase 1 (Audit) Completed
+
+### Phase 1 Audit Findings & Verification (July 17, 2026)
+We have completed a full code-level audit of the codebase to verify functionality across the existing booking flow, auth mechanisms, Chat assistant state, consensus planner, and document check system. Below is the detailed verification status and the minor gaps identified:
+
+#### 1. Booking Flow
+- **Search & Results:** Verified. Populates hotel selection via `GET /bookings/hotels?destination=...` upon selecting one of the hardcoded destinations in the UI.
+- **Create Booking & Validation:** Verified. Enforces that:
+  - Check-in date is not in the past (`start_date >= today`).
+  - Check-out date is strictly after check-in (`end_date > start_date`).
+  - Passport expiry is in the future (`passport_expiry > today`).
+  - Date format matches `YYYY-MM-DD`.
+  - Validations are enforced in both the frontend form (`Dashboard.jsx`) and the backend Pydantic model (`BookingCreate`) + service layer (`booking_service.py`).
+- **Gaps found:**
+  - In the frontend (`Dashboard.jsx`), destination selection is restricted to 5 hardcoded cities (Tokyo, Paris, London, Rome, New York) in a dropdown. There is no free-text search for custom destinations, even though the backend supports general text regex matches.
+  - Date comparison relies on client-side local timezone `Date` parsing on the frontend vs server-side `datetime.date.today()` on the backend, which may lead to edge-case validation mismatches around midnight.
+
+#### 2. Feature 1 (Document Risk Monitor)
+- **Status:** Complete.
+- **Verification:** Verified backend logic (`document_check_service.py`) checks minimum passport validity requirement (90 or 180 days) for 15+ countries against return date, generates conversational AI response rephrasing via Groq (without emojis and under 50 words), and falls back to deterministic raw reasoning if the API fails. Frontend (`Documents.jsx`) correctly renders status badges, LLM reasoning block, and the 3-point checklist panel.
+- **Gaps found:**
+  - The checklist items on the frontend have minor redundancy, where passport future expiration is checked on the client side using `isPassportValid` while the remaining checks rely on the backend.
+  - No visual explanation of the exact "days short" is shown on the frontend UI except within the LLM-phrased reason text itself.
+
+#### 3. Feature 2 (Group Consensus Planner)
+- **Status:** Complete & Working.
+- **Verification:** Scored consensus filters hotels by per-person split budget (`price_per_night * num_nights / num_members <= member.budget` for all members), computes overlapping preferences tag score, ranks recommended options, and prompts Groq LLM to generate a professional travel consensus summary reasoning text.
+- **Gaps found:** None. Algorithms, schema verification, and database persistence are fully intact and correct.
+
+#### 4. Auth Enforcement
+- **Status:** Verified.
+- **Verification:** Frontend protected routes are guarded via `<ProtectedRoute>` component which checks the `isAuthenticated` state from `AuthContext` and redirects to `/login` if not logged in. Backend routes require the `Authorization` header with a valid JWT via `get_current_user` dependency.
+- **Gaps found:**
+  - The hotel search route `GET /bookings/hotels` is currently public (no `get_current_user` dependency on backend), although in the UI it is nested inside the protected Dashboard route.
+  - Unauthenticated routes like `/login` or `/signup` do not auto-redirect authenticated users to `/` if they manually navigate back to them.
+
+#### 5. Chat UI Implementation
+- **Status:** Single Global Floating Widget.
+- **Verification:** Verified that `App.jsx` mounts the `FloatingChatWidget` globally outside of routing. The widget handles conversation state, auth conditional rendering (hidden on unauthenticated pages), collapsible panel drawer, history rendering, and trip-context dropdown injection.
+- **Gaps found:**
+  - An empty placeholder file `Assistant.jsx` remains in `frontend/src/pages/` and could be deleted to clean up.
 
 ### Done
 - **Backend Skeleton & MongoDB Setup** (Day 1-2)
