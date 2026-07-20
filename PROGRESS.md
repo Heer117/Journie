@@ -1,6 +1,12 @@
 # Journie Progress Log
 
-## Status: Phase A (LangChain Foundational Refactor) Completed
+## Status: Phase B (Markdown-Formatted Chat Replies) Completed
+
+### Phase B: Markdown-Formatted Chat Replies (July 20, 2026)
+- **react-markdown Dependency:** Installed `react-markdown` in the frontend dependencies.
+- **Markdown Message Rendering:** Updated `FloatingChatWidget.jsx` to render chatbot responses using `<ReactMarkdown>` configured with custom inline styles for standard text formatting elements (`p`, `h1`, `h2`, `h3`, `ul`, `ol`, `li`, `strong`, `em`, `a`) to override stylesheet resets and ensure bolding, italics, headings, lists, and spacing display perfectly.
+- **Backend System Prompts:** Modified general and booking-context system prompts in `chat_routes.py` to instruct the LLM to automatically format its responses with Markdown (lists, section headers, and bolded terms) for a polished, structured look.
+- **Build Verification:** Verified the Vite production build compiles successfully.
 
 ### Phase A: LangChain Foundational Refactor (July 19, 2026)
 - **LangChain ChatGroq Integration:** Replaced direct Groq SDK client with LangChain `ChatGroq` wrapper in `llm_service.py`.

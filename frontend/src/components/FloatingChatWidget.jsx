@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { MessageSquare, X, Send, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../api/client";
+import ReactMarkdown from "react-markdown";
 
 function FloatingChatWidget() {
   const { isAuthenticated } = useAuth();
@@ -157,7 +158,26 @@ function FloatingChatWidget() {
                         : "bg-white border border-gray-200 text-gray-800 rounded-tl-none shadow-xs"
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === "user" ? (
+                      msg.content
+                    ) : (
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ node, ...props }) => <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginTop: '0.75rem', marginBottom: '0.25rem', display: 'block' }} {...props} />,
+                          h2: ({ node, ...props }) => <h2 style={{ fontSize: '1.05rem', fontWeight: 'bold', marginTop: '0.6rem', marginBottom: '0.2rem', display: 'block' }} {...props} />,
+                          h3: ({ node, ...props }) => <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', marginTop: '0.5rem', marginBottom: '0.15rem', display: 'block' }} {...props} />,
+                          p: ({ node, ...props }) => <p style={{ marginBottom: '0.5rem', display: 'block' }} {...props} />,
+                          ul: ({ node, ...props }) => <ul style={{ listStyleType: 'disc', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
+                          ol: ({ node, ...props }) => <ol style={{ listStyleType: 'decimal', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
+                          li: ({ node, ...props }) => <li style={{ marginBottom: '0.25rem', display: 'list-item' }} {...props} />,
+                          strong: ({ node, ...props }) => <strong style={{ fontWeight: 'bold', color: '#111827' }} {...props} />,
+                          em: ({ node, ...props }) => <em style={{ fontStyle: 'italic' }} {...props} />,
+                          a: ({ node, ...props }) => <a style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer" {...props} />
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               ))

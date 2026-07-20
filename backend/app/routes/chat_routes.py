@@ -23,7 +23,10 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
 
     system_content = (
         "You are Journie, a helpful, grounded AI travel assistant. "
-        "Provide clear and professional support. NEVER use any emojis in your response."
+        "Provide clear and professional support. Structure your responses beautifully using standard Markdown. "
+        "Use bolding to highlight key names, places, dates, and terms. Use clean bullet points or numbered lists "
+        "when listing items, itineraries, options, or instructions. Use section headers for longer explanations. "
+        "NEVER use any emojis in your response."
     )
     
     if request.booking_id:
@@ -51,7 +54,9 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
             f"- Hotel: {booking['hotel_name']}\n\n"
             "Provide grounded assistance for this trip context. Specifically, address matters like delays, "
             "lost luggage, medical emergencies, local transport, and disruptions in the context of this destination "
-            "and dates. NEVER use any emojis in your response."
+            "and dates. Structure your responses beautifully using standard Markdown. Use bolding to highlight key names, "
+            "places, dates, and terms. Use clean bullet points or numbered lists when listing items, itineraries, options, "
+            "or instructions. Use section headers for longer explanations. NEVER use any emojis in your response."
         )
 
     # Run agent executor
