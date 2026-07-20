@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from bson import ObjectId
 from app.schemas.chat_schema import ChatRequest, ChatResponse
-from app.services.llm_service import get_chat_completion
+from app.services.llm_service import run_agent_chat, deserialize_messages, message_to_dict
+from langchain_core.messages import HumanMessage, AIMessage
 from app.db import conversations_collection, bookings_collection
 from app.utils.dependencies import get_current_user
 
@@ -15,13 +16,11 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
     if conversation is None:
         history = []
     else:
-        history = conversation["messages"]
+        history = conversation.get("messages", [])
 
-    history.append({"role": "user", "content": request.message})
+    # Deserialize message history to LangChain messages
+    langchain_history = deserialize_messages(history)
 
-    # Prepare messages to send to the LLM
-    messages_to_send = []
-    
     system_content = (
         "You are Journie, a helpful, grounded AI travel assistant. "
         "Provide clear and professional support. NEVER use any emojis in your response."
@@ -54,17 +53,24 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
             "lost luggage, medical emergencies, local transport, and disruptions in the context of this destination "
             "and dates. NEVER use any emojis in your response."
         )
-        
-    messages_to_send.append({"role": "system", "content": system_content})
-    messages_to_send.extend(history)
 
-    reply_text = get_chat_completion(messages_to_send)
+    # Run agent executor
+    reply_text = run_agent_chat(
+        system_prompt=system_content,
+        user_message=request.message,
+        chat_history=langchain_history,
+    )
 
-    history.append({"role": "assistant", "content": reply_text})
+    # Add the current exchange to conversation memory
+    langchain_history.append(HumanMessage(content=request.message))
+    langchain_history.append(AIMessage(content=reply_text))
+
+    # Serialize back to MongoDB format
+    serialized_history = [message_to_dict(msg) for msg in langchain_history]
 
     await conversations_collection.update_one(
         {"user_id": user_id},
-        {"$set": {"messages": history}},
+        {"$set": {"messages": serialized_history}},
         upsert=True,
     )
 

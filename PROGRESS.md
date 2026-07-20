@@ -1,6 +1,12 @@
 # Journie Progress Log
 
-## Status: Phase 1 (Audit) Completed
+## Status: Phase A (LangChain Foundational Refactor) Completed
+
+### Phase A: LangChain Foundational Refactor (July 19, 2026)
+- **LangChain ChatGroq Integration:** Replaced direct Groq SDK client with LangChain `ChatGroq` wrapper in `llm_service.py`.
+- **Memory Serialization Refactor:** Converted MongoDB-based conversation storage to serialize and deserialize messages using LangChain's serialization formats (`message_to_dict` and `messages_from_dict`).
+- **Agent Scaffold:** Created a `create_tool_calling_agent` and `AgentExecutor` scaffold in `llm_service.py` with a dynamic prompt template and an empty tool list.
+- **Verification:** Successfully ran all `test_live_assistant.py` integration tests verifying correctness of formatting, absence of emojis, and API responses. Verified new message schema structure in MongoDB.
 
 ### Phase 1 Audit Findings & Verification (July 17, 2026)
 We have completed a full code-level audit of the codebase to verify functionality across the existing booking flow, auth mechanisms, Chat assistant state, consensus planner, and document check system. Below is the detailed verification status and the minor gaps identified:
