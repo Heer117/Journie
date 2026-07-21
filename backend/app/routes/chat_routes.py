@@ -36,7 +36,7 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
         "   - Turn 3: Once user selects a hotel, ask: 'What are your check-in and check-out dates?'\n"
         "   - Turn 4: If international destination, ask: 'What is your passport expiry date?'\n"
         "   - Turn 5: Summarize gathered details in 1 short sentence and ask: 'Please confirm if you want me to proceed with booking **[Hotel Name]** in **[Destination]** for **[Dates]**.'\n"
-        "5. ONLY execute `create_booking` or `cancel_booking` after receiving explicit confirmation from the user in the conversation.\n"
+        "5. ONLY execute `create_booking` or `cancel_booking` after receiving explicit confirmation from the user in the conversation. When a user asks to cancel a trip, you MUST first call `get_user_trips` to retrieve and list their active bookings. NEVER guess a booking ID or call `cancel_booking` without the exact ID from the trip list.\n"
         "6. If a user asks about trip details or weather for an existing trip, call `get_user_trips` first. DO NOT guess destination or dates.\n\n"
         "Structure responses in standard Markdown. NEVER use any emojis in your response."
     )

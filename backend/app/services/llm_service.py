@@ -336,7 +336,11 @@ async def _intercept_and_execute_tool(text: str, messages: list, tool_map: dict,
                     else:
                         raise
                 messages.append(AIMessage(content=text))
-                messages.append(SystemMessage(content=f"Result from tool: {tool_output}\nPlease summarize this result into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
+                messages.append(SystemMessage(content=(
+                    f"The tool returned: '{tool_output}'\n\n"
+                    "Write a warm, concise conversational message summarizing this result for the user. "
+                    "Do NOT start your message with 'Result from tool' or 'The tool returned'. Respond directly, naturally, and helpfully. Do not use emojis."
+                )))
                 try:
                     res = await model.ainvoke(messages)
                 except Exception:
@@ -528,7 +532,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             return _clean_response(res.content)
         if messages and isinstance(messages[-1], ToolMessage):
             try:
-                messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
+                messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis. Do NOT repeat 'Result from tool' or 'The tool returned'. Just answer directly and conversationally."))
                 summary_res = await chat_model.ainvoke(messages)
                 if summary_res.content and summary_res.content.strip():
                     summary_res.content = await _intercept_and_execute_tool(summary_res.content, messages, tool_map, chat_model)
@@ -635,7 +639,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                         return _clean_response(res.content)
                     if messages and isinstance(messages[-1], ToolMessage):
                         try:
-                            messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
+                            messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis. Do NOT repeat 'Result from tool' or 'The tool returned'. Just answer directly and conversationally."))
                             summary_res = await alt_model.ainvoke(messages)
                             if summary_res.content and summary_res.content.strip():
                                 summary_res.content = await _intercept_and_execute_tool(summary_res.content, messages, tool_map, alt_model)
