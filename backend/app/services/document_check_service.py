@@ -29,6 +29,12 @@ PASSPORT_VALIDITY_MAP = {
     "netherlands": {"country": "Netherlands", "days": 90, "visa": "Schengen visa-exempt for tourist stays up to 90 days."},
     "germany": {"country": "Germany", "days": 90, "visa": "Schengen visa-exempt for tourist stays up to 90 days."},
     "spain": {"country": "Spain", "days": 90, "visa": "Schengen visa-exempt for tourist stays up to 90 days."},
+    
+    # Expanded international destinations
+    "dubai": {"country": "United Arab Emirates", "days": 180, "visa": "Visa on arrival or pre-arranged tourist visa depending on nationality."},
+    "bali": {"country": "Indonesia", "days": 180, "visa": "Visa on Arrival (VoA) required for tourist stays up to 30 days."},
+    "indonesia": {"country": "Indonesia", "days": 180, "visa": "Visa on Arrival (VoA) required for tourist stays up to 30 days."},
+    "maldives": {"country": "Maldives", "days": 180, "visa": "Free 30-day visa on arrival for all nationalities."}
 }
 
 async def perform_document_check(
@@ -39,6 +45,24 @@ async def perform_document_check(
     passport_expiry_str: str
 ) -> dict:
     dest_key = destination.strip().lower()
+    
+    # Skip checks entirely for domestic destinations
+    DOMESTIC_DESTINATIONS = {"goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh"}
+    if dest_key in DOMESTIC_DESTINATIONS:
+        check_doc = {
+            "booking_id": booking_id,
+            "user_id": user_id,
+            "status": "Ready",
+            "reason": "This is a domestic trip within India. Passport validity and visa requirements do not apply.",
+            "created_at": datetime.datetime.utcnow().isoformat()
+        }
+        await document_checks_collection.update_one(
+            {"booking_id": booking_id},
+            {"$set": check_doc},
+            upsert=True
+        )
+        return check_doc
+
     rule = PASSPORT_VALIDITY_MAP.get(dest_key, {"country": destination, "days": 180, "visa": "Please check visa requirements before travel."})
     
     country = rule["country"]

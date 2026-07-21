@@ -1,12 +1,14 @@
 # Journie Progress Log
 
-## Status: Phase B (Markdown-Formatted Chat Replies) Completed
+## Status: Phase H (Expand Destination & Hotel Dataset) Completed
+
+### Phase H: Expand Destination & Hotel Dataset (July 20, 2026)
+- **Hotels & Destinations Expansion:** Expanded the dataset in `seed_hotels.py` from 5 to 17 destinations (6 domestic: Goa, Manali, Jaipur, Udaipur, Kerala, Rishikesh; 11 international: Tokyo, Paris, London, Rome, New York, Thailand, Dubai, Singapore, Bali, Switzerland, Maldives), seeding 4 unique hotels per destination (68 hotels total) with realistic pricing, ratings, descriptions, and amenities.
+- **Seeding Logic Update:** Changed the database seeding strategy to use `update_one` with `upsert=True` matching name and destination. This adds new hotels and updates existing ones alongside current data without wiping the collection, preserving the `_id` references of existing hotels and preventing bookings from breaking.
+- **Domestic Document Bypass:** Implemented a bypass in `document_check_service.py` and `Documents.jsx` for domestic Indian destinations. When booking a domestic trip, passport/visa checks are completely skipped, immediately returning a status of `Ready` with the reason `"This is a domestic trip within India. Passport validity and visa requirements do not apply."`, and updating the UI checklist to reflect that passport expiry, destination validity, and visa checks are not required.
+- **Frontend Dropdowns and Image Mapping:** Expanded destination selection dropdowns and mapped high-quality Unsplash image URLs for all 17 destinations across `Dashboard.jsx`, `Documents.jsx`, and `GroupPlanner.jsx`.
 
 ### Phase B: Markdown-Formatted Chat Replies (July 20, 2026)
-- **react-markdown Dependency:** Installed `react-markdown` in the frontend dependencies.
-- **Markdown Message Rendering:** Updated `FloatingChatWidget.jsx` to render chatbot responses using `<ReactMarkdown>` configured with custom inline styles for standard text formatting elements (`p`, `h1`, `h2`, `h3`, `ul`, `ol`, `li`, `strong`, `em`, `a`) to override stylesheet resets and ensure bolding, italics, headings, lists, and spacing display perfectly.
-- **Backend System Prompts:** Modified general and booking-context system prompts in `chat_routes.py` to instruct the LLM to automatically format its responses with Markdown (lists, section headers, and bolded terms) for a polished, structured look.
-- **Build Verification:** Verified the Vite production build compiles successfully.
 
 ### Phase A: LangChain Foundational Refactor (July 19, 2026)
 - **LangChain ChatGroq Integration:** Replaced direct Groq SDK client with LangChain `ChatGroq` wrapper in `llm_service.py`.

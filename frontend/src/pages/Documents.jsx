@@ -8,6 +8,18 @@ const DESTINATION_IMAGES = {
   London: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80",
   Rome: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80",
   "New York": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80",
+  Goa: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
+  Manali: "https://images.unsplash.com/photo-1626896756165-247e62a149b6?auto=format&fit=crop&w=600&q=80",
+  Jaipur: "https://images.unsplash.com/photo-1477584308802-e9c3788ee1a4?auto=format&fit=crop&w=600&q=80",
+  Udaipur: "https://images.unsplash.com/photo-1566552881560-0be862a7c445?auto=format&fit=crop&w=600&q=80",
+  Kerala: "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=600&q=80",
+  Rishikesh: "https://images.unsplash.com/photo-1545638190-2751f8920d23?auto=format&fit=crop&w=600&q=80",
+  Thailand: "https://images.unsplash.com/photo-1528181304800-2f1702425221?auto=format&fit=crop&w=600&q=80",
+  Dubai: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80",
+  Singapore: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80",
+  Bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80",
+  Switzerland: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=600&q=80",
+  Maldives: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=600&q=80",
   Default: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80"
 };
 
@@ -73,6 +85,7 @@ function Documents() {
           {bookings.map((booking) => {
             const check = booking.document_check || { status: "Action Needed", reason: "Pending analysis." };
             const isReady = check.status === "Ready";
+            const isDomestic = ["goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh"].includes(booking.destination.toLowerCase());
 
             return (
               <div key={booking.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col md:flex-row hover:shadow-md transition-shadow">
@@ -133,20 +146,22 @@ function Documents() {
                       <div className="space-y-3">
                         {/* Check 1: Expiry date in the future */}
                         <div className="flex items-start gap-3">
-                          {isPassportValid(booking.passport_expiry) ? (
+                          {isDomestic || isPassportValid(booking.passport_expiry) ? (
                             <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                           ) : (
                             <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
                           )}
                           <div className="text-sm text-gray-700">
                             <p className="font-semibold">Passport Expiry Status</p>
-                            <p className="text-xs text-gray-500">Valid until {booking.passport_expiry}</p>
+                            <p className="text-xs text-gray-500">
+                              {isDomestic ? "Not required for domestic travel." : `Valid until ${booking.passport_expiry}`}
+                            </p>
                           </div>
                         </div>
 
                         {/* Check 2: Minimum passport validity beyond return date */}
                         <div className="flex items-start gap-3">
-                          {isReady ? (
+                          {isDomestic || isReady ? (
                             <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                           ) : (
                             <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
@@ -154,7 +169,7 @@ function Documents() {
                           <div className="text-sm text-gray-700">
                             <p className="font-semibold">Destination Validity Requirement</p>
                             <p className="text-xs text-gray-500">
-                              Checks if passport is valid long enough past check-out ({booking.end_date})
+                              {isDomestic ? "Not required for domestic travel." : `Checks if passport is valid long enough past check-out (${booking.end_date})`}
                             </p>
                           </div>
                         </div>
@@ -164,7 +179,9 @@ function Documents() {
                           <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                           <div className="text-sm text-gray-700">
                             <p className="font-semibold">Visa Requirements Checked</p>
-                            <p className="text-xs text-gray-500">Regulatory guidelines provided for {booking.destination}</p>
+                            <p className="text-xs text-gray-500">
+                              {isDomestic ? "Not required for domestic travel." : `Regulatory guidelines provided for ${booking.destination}`}
+                            </p>
                           </div>
                         </div>
                       </div>

@@ -8,6 +8,18 @@ const DESTINATION_IMAGES = {
   London: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80",
   Rome: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80",
   "New York": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80",
+  Goa: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
+  Manali: "https://images.unsplash.com/photo-1626896756165-247e62a149b6?auto=format&fit=crop&w=600&q=80",
+  Jaipur: "https://images.unsplash.com/photo-1477584308802-e9c3788ee1a4?auto=format&fit=crop&w=600&q=80",
+  Udaipur: "https://images.unsplash.com/photo-1566552881560-0be862a7c445?auto=format&fit=crop&w=600&q=80",
+  Kerala: "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=600&q=80",
+  Rishikesh: "https://images.unsplash.com/photo-1545638190-2751f8920d23?auto=format&fit=crop&w=600&q=80",
+  Thailand: "https://images.unsplash.com/photo-1528181304800-2f1702425221?auto=format&fit=crop&w=600&q=80",
+  Dubai: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80",
+  Singapore: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80",
+  Bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80",
+  Switzerland: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=600&q=80",
+  Maldives: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=600&q=80",
   Default: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80"
 };
 
@@ -27,7 +39,11 @@ function GroupPlanner() {
     { name: "", budget: "", preferences: [] }
   ]);
 
-  const [destinations] = useState(["Tokyo", "Paris", "London", "Rome", "New York"]);
+  const [destinations] = useState([
+    "Tokyo", "Paris", "London", "Rome", "New York", 
+    "Goa", "Manali", "Jaipur", "Udaipur", "Kerala", "Rishikesh", 
+    "Thailand", "Dubai", "Singapore", "Bali", "Switzerland", "Maldives"
+  ]);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
