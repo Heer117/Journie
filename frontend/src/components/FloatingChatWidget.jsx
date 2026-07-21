@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, X, Send, Sparkles } from "lucide-react";
+import { MessageSquare, X, Send, Sparkles, ChevronRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../api/client";
 import ReactMarkdown from "react-markdown";
@@ -17,17 +17,17 @@ function FloatingChatWidget() {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, loading]);
 
-  // Hide the widget completely if user is not logged in
   if (!isAuthenticated) {
     return null;
   }
 
-  async function sendMessage() {
-    if (!input.trim()) return;
+  async function sendMessage(textToSend) {
+    const text = textToSend || input;
+    if (!text || !text.trim()) return;
 
-    const userMessage = { role: "user", content: input };
+    const userMessage = { role: "user", content: text };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -57,6 +57,55 @@ function FloatingChatWidget() {
     }
   }
 
+  // Extract interactive quick options/chips from assistant message text
+  function getQuickReplyOptions(text) {
+    if (!text) return [];
+    const options = [];
+
+    // 1. Hotel selection detector
+    if (text.includes("Available hotels") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
+      const matches = text.matchAll(/\*\*(.*?)\*\*/g);
+      for (const m of matches) {
+        const name = m[1].replace(/Available hotels in.*/i, "").trim();
+        if (name && !name.toLowerCase().includes("hotel id") && !name.toLowerCase().includes("available hotels") && name.length < 40) {
+          options.push(`Book ${name}`);
+        }
+      }
+    }
+
+    // 2. Action Confirmation detector
+    if (text.toLowerCase().includes("confirm") || text.toLowerCase().includes("would you like me to proceed") || text.toLowerCase().includes("proceed with this booking")) {
+      options.push("Yes, confirm and proceed with booking");
+      options.push("No, cancel this request");
+    }
+
+    // 3. Cancellation confirmation
+    if (text.toLowerCase().includes("cancel your booking") || text.toLowerCase().includes("confirm cancellation")) {
+      options.push("Yes, confirm cancellation");
+      options.push("No, keep booking");
+    }
+
+    // 4. Destination selector
+    if (text.toLowerCase().includes("destination") || text.toLowerCase().includes("where would you like to travel") || text.toLowerCase().includes("which city")) {
+      options.push("Paris");
+      options.push("Goa");
+      options.push("Bali");
+      options.push("Tokyo");
+      options.push("London");
+      options.push("Dubai");
+    }
+
+    // Deduplicate and return top 6
+    return Array.from(new Set(options)).slice(0, 6);
+  }
+
+  const defaultStarterOptions = [
+    "Book a new trip",
+    "What hotels are in Paris?",
+    "Check my trip weather",
+    "Cancel an active trip",
+  ];
+
   return (
     <>
       {/* Floating Button */}
@@ -70,7 +119,7 @@ function FloatingChatWidget() {
 
       {/* Chat Drawer Overlay */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-2xl border border-gray-200 shadow-2xl flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-5 duration-250">
+        <div className="fixed bottom-24 right-6 w-96 h-[520px] bg-white rounded-2xl border border-gray-200 shadow-2xl flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-5 duration-250">
           
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex items-center justify-between shadow-sm">
@@ -78,12 +127,12 @@ function FloatingChatWidget() {
               <Sparkles className="w-5 h-5 text-blue-100" />
               <div>
                 <h3 className="font-bold text-sm leading-none">Journie Assistant</h3>
-                <span className="text-[10px] text-blue-100">Live booking support</span>
+                <span className="text-[10px] text-blue-100">Live booking & cancellation support</span>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-white/80 hover:text-white transition-colors"
+              className="text-white/80 hover:text-white transition-colors cursor-pointer"
               aria-label="Close assistant"
             >
               <X className="w-5 h-5" />
@@ -93,58 +142,95 @@ function FloatingChatWidget() {
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-500">
-                <MessageSquare className="w-10 h-10 text-gray-300 mb-2" />
-                <p className="text-sm font-semibold">Welcome to Journie Chat</p>
-                <p className="text-xs text-gray-400 mt-1">Ask questions about bookings, flights, visa rules, or destination guidelines.</p>
-              </div>
-            ) : (
-              messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
-                >
-                  <span className="text-[10px] text-gray-400 mb-0.5 px-1">
-                    {msg.role === "user" ? "You" : "Journie"}
-                  </span>
-                  <div
-                    className={`p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] ${
-                      msg.role === "user"
-                        ? "bg-blue-600 text-white rounded-tr-none shadow-sm"
-                        : "bg-white border border-gray-200 text-gray-800 rounded-tl-none shadow-xs"
-                    }`}
-                  >
-                    {msg.role === "user" ? (
-                      msg.content
-                    ) : (
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ node, ...props }) => <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginTop: '0.75rem', marginBottom: '0.25rem', display: 'block' }} {...props} />,
-                          h2: ({ node, ...props }) => <h2 style={{ fontSize: '1.05rem', fontWeight: 'bold', marginTop: '0.6rem', marginBottom: '0.2rem', display: 'block' }} {...props} />,
-                          h3: ({ node, ...props }) => <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', marginTop: '0.5rem', marginBottom: '0.15rem', display: 'block' }} {...props} />,
-                          p: ({ node, ...props }) => <p style={{ marginBottom: '0.5rem', display: 'block' }} {...props} />,
-                          ul: ({ node, ...props }) => <ul style={{ listStyleType: 'disc', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
-                          ol: ({ node, ...props }) => <ol style={{ listStyleType: 'decimal', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
-                          li: ({ node, ...props }) => <li style={{ marginBottom: '0.25rem', display: 'list-item' }} {...props} />,
-                          strong: ({ node, ...props }) => <strong style={{ fontWeight: 'bold', color: '#111827' }} {...props} />,
-                          em: ({ node, ...props }) => <em style={{ fontStyle: 'italic' }} {...props} />,
-                          a: ({ node, ...props }) => <a style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer" {...props} />
-                        }}
+              <div className="h-full flex flex-col items-center justify-center text-center p-4 text-gray-500">
+                <MessageSquare className="w-10 h-10 text-blue-500/80 mb-2" />
+                <p className="text-sm font-bold text-gray-800">Journie Travel Agent</p>
+                <p className="text-xs text-gray-500 mt-1 mb-4">I can help you search hotels, book trips, check weather, or manage cancellations step-by-step.</p>
+                
+                {/* Default Starter MCQ Chips */}
+                <div className="w-full space-y-2">
+                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider text-left px-1">Select an option to start:</p>
+                  <div className="flex flex-col gap-1.5 w-full">
+                    {defaultStarterOptions.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => sendMessage(opt)}
+                        className="w-full text-left text-xs bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-xl transition-all flex items-center justify-between shadow-xs cursor-pointer group"
                       >
-                        {msg.content}
-                      </ReactMarkdown>
-                    )}
+                        <span>{opt}</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
+                      </button>
+                    ))}
                   </div>
                 </div>
-              ))
+              </div>
+            ) : (
+              messages.map((msg, idx) => {
+                const options = msg.role === "assistant" ? getQuickReplyOptions(msg.content) : [];
+                const isLastAssistant = msg.role === "assistant" && idx === messages.length - 1;
+
+                return (
+                  <div
+                    key={idx}
+                    className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+                  >
+                    <span className="text-[10px] text-gray-400 mb-0.5 px-1">
+                      {msg.role === "user" ? "You" : "Journie"}
+                    </span>
+                    <div
+                      className={`p-3 rounded-2xl text-sm leading-relaxed max-w-[88%] ${
+                        msg.role === "user"
+                          ? "bg-blue-600 text-white rounded-tr-none shadow-sm"
+                          : "bg-white border border-gray-200 text-gray-800 rounded-tl-none shadow-xs"
+                      }`}
+                    >
+                      {msg.role === "user" ? (
+                        msg.content
+                      ) : (
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ node, ...props }) => <h1 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginTop: '0.5rem', marginBottom: '0.25rem', display: 'block' }} {...props} />,
+                            h2: ({ node, ...props }) => <h2 style={{ fontSize: '1.0rem', fontWeight: 'bold', marginTop: '0.4rem', marginBottom: '0.2rem', display: 'block' }} {...props} />,
+                            h3: ({ node, ...props }) => <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginTop: '0.3rem', marginBottom: '0.15rem', display: 'block' }} {...props} />,
+                            p: ({ node, ...props }) => <p style={{ marginBottom: '0.35rem', display: 'block' }} {...props} />,
+                            ul: ({ node, ...props }) => <ul style={{ listStyleType: 'disc', paddingLeft: '1.2rem', marginBottom: '0.35rem', display: 'block' }} {...props} />,
+                            ol: ({ node, ...props }) => <ol style={{ listStyleType: 'decimal', paddingLeft: '1.2rem', marginBottom: '0.35rem', display: 'block' }} {...props} />,
+                            li: ({ node, ...props }) => <li style={{ marginBottom: '0.2rem', display: 'list-item' }} {...props} />,
+                            strong: ({ node, ...props }) => <strong style={{ fontWeight: 'bold', color: '#111827' }} {...props} />,
+                            em: ({ node, ...props }) => <em style={{ fontStyle: 'italic' }} {...props} />,
+                            a: ({ node, ...props }) => <a style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer" {...props} />
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      )}
+                    </div>
+
+                    {/* Render Quick Reply Option Buttons / Chips */}
+                    {isLastAssistant && options.length > 0 && (
+                      <div className="mt-2.5 flex flex-wrap gap-1.5 max-w-[92%] pl-1">
+                        {options.map((optText, optIdx) => (
+                          <button
+                            key={optIdx}
+                            onClick={() => sendMessage(optText)}
+                            className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-3 py-1.5 rounded-full border border-blue-200 transition-all hover:scale-102 cursor-pointer shadow-2xs flex items-center gap-1"
+                          >
+                            <span>{optText}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
             {loading && (
               <div className="flex flex-col items-start">
                 <span className="text-[10px] text-gray-400 mb-0.5 px-1">Journie</span>
                 <div className="bg-white border border-gray-200 text-gray-450 rounded-2xl rounded-tl-none p-3 shadow-xs text-xs flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-100"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-200"></div>
                 </div>
               </div>
             )}
@@ -159,10 +245,10 @@ function FloatingChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Journie about your trip..."
+              placeholder="Type message or select an option above..."
             />
             <button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
               className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg disabled:opacity-50 transition-colors flex items-center justify-center cursor-pointer shadow-sm"
               aria-label="Send message"
