@@ -40,6 +40,21 @@ const AVAILABLE_TAGS = [
   "gym", "garden", "social", "rooftop"
 ];
 
+const DOMESTIC_DESTINATIONS = ["goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh", "andaman", "lakshadweep", "ladakh", "darjeeling"];
+
+function isDomesticDestination(destName) {
+  if (!destName) return false;
+  return DOMESTIC_DESTINATIONS.includes(destName.trim().toLowerCase());
+}
+
+function formatCurrency(price, destName) {
+  if (price === undefined || price === null) return "";
+  if (isDomesticDestination(destName)) {
+    return `₹${Number(price).toLocaleString("en-IN")}`;
+  }
+  return `$${price}`;
+}
+
 function GroupPlanner() {
   const [tripName, setTripName] = useState("");
   const [selectedDest, setSelectedDest] = useState("");
@@ -438,11 +453,11 @@ function GroupPlanner() {
                           <div className="grid grid-cols-2 gap-3 border-y border-gray-100 py-2.5 text-xs">
                             <div>
                               <span className="text-2xs text-gray-400 font-semibold block uppercase">Price Per Night</span>
-                              <span className="text-sm font-bold text-gray-900">${hotel.price_per_night}</span>
+                              <span className="text-sm font-bold text-gray-900">{formatCurrency(hotel.price_per_night, selectedDest)}</span>
                             </div>
                             <div className="bg-blue-50 border border-blue-100/50 rounded px-2 py-1 text-right">
                               <span className="text-2xs text-blue-600 font-semibold block uppercase">Per-Person Split</span>
-                              <span className="text-sm font-extrabold text-blue-700">${hotel.per_person_cost.toFixed(2)}</span>
+                              <span className="text-sm font-extrabold text-blue-700">{formatCurrency(hotel.per_person_cost, selectedDest)}</span>
                             </div>
                           </div>
 
@@ -475,7 +490,7 @@ function GroupPlanner() {
                           <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                           <span className="font-semibold text-gray-700">{hotel.rating.toFixed(1)}</span>
                         </div>
-                        <span>Total Stay Cost: <b>${hotel.total_cost}</b></span>
+                        <span>Total Stay Cost: <b>{formatCurrency(hotel.total_cost, selectedDest)}</b></span>
                         <span className="font-semibold text-blue-600">Overlap: {hotel.score}</span>
                       </div>
                     </div>

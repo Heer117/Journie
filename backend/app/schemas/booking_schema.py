@@ -16,15 +16,17 @@ class BookedForInput(BaseModel):
     phone: str
     relation: Optional[str] = None
 
+DOMESTIC_DESTINATIONS = {"goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh", "andaman", "lakshadweep", "ladakh", "darjeeling"}
+
 class BookingCreate(BaseModel):
     hotel_id: str
     destination: str
     start_date: str  # YYYY-MM-DD
     end_date: str    # YYYY-MM-DD
-    passport_expiry: str  # YYYY-MM-DD
+    passport_expiry: Optional[str] = "N/A"  # YYYY-MM-DD or N/A
     booked_for: Optional[BookedForInput] = None
 
-    @field_validator('start_date', 'end_date', 'passport_expiry')
+    @field_validator('start_date', 'end_date')
     @classmethod
     def validate_date_format(cls, v: str) -> str:
         try:
@@ -33,14 +35,23 @@ class BookingCreate(BaseModel):
             raise ValueError("Date must be in YYYY-MM-DD format.")
         return v
 
+    @field_validator('passport_expiry')
+    @classmethod
+    def validate_passport_format(cls, v: Optional[str]) -> str:
+        if not v or v.strip().upper() == "N/A":
+            return "N/A"
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError("Passport expiry date must be in YYYY-MM-DD format.")
+        return v
+
     @model_validator(mode='after')
     def validate_dates(self) -> 'BookingCreate':
         try:
             start = datetime.strptime(self.start_date, "%Y-%m-%d").date()
             end = datetime.strptime(self.end_date, "%Y-%m-%d").date()
-            passport = datetime.strptime(self.passport_expiry, "%Y-%m-%d").date()
         except ValueError:
-            # Let the field validators handle format issues
             return self
 
         today = date.today()
@@ -48,8 +59,22 @@ class BookingCreate(BaseModel):
             raise ValueError("Check-in date cannot be in the past.")
         if end <= start:
             raise ValueError("Check-out date must be strictly after check-in date.")
-        if passport <= today:
-            raise ValueError("Passport expiry date must be in the future.")
+
+        is_domestic = self.destination.strip().lower() in DOMESTIC_DESTINATIONS
+
+        if is_domestic:
+            self.passport_expiry = "N/A"
+        else:
+            if not self.passport_expiry or self.passport_expiry == "N/A":
+                raise ValueError("Passport expiry date is required for international travel.")
+            try:
+                passport = datetime.strptime(self.passport_expiry, "%Y-%m-%d").date()
+                if passport <= today:
+                    raise ValueError("Passport expiry date must be in the future.")
+            except ValueError as e:
+                if "required" in str(e) or "future" in str(e):
+                    raise e
+                raise ValueError("Invalid passport expiry date.")
         return self
 
 class DocumentCheckResponse(BaseModel):

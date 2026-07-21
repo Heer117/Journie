@@ -33,11 +33,17 @@ async def create_user_booking(user_id: str, booking_data: BookingCreate) -> dict
             detail="Hotel not found.",
         )
     
+    DOMESTIC_DESTINATIONS = {"goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh", "andaman", "lakshadweep", "ladakh", "darjeeling"}
+    is_domestic = booking_data.destination.strip().lower() in DOMESTIC_DESTINATIONS
+
     # Date validations
     try:
         start_dt = datetime.datetime.strptime(booking_data.start_date, "%Y-%m-%d")
         end_dt = datetime.datetime.strptime(booking_data.end_date, "%Y-%m-%d")
-        passport_dt = datetime.datetime.strptime(booking_data.passport_expiry, "%Y-%m-%d")
+        if is_domestic:
+            passport_dt = None
+        else:
+            passport_dt = datetime.datetime.strptime(booking_data.passport_expiry, "%Y-%m-%d")
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -57,11 +63,12 @@ async def create_user_booking(user_id: str, booking_data: BookingCreate) -> dict
             detail="Check-out date must be strictly after check-in date.",
         )
         
-    if passport_dt.date() <= today:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Passport expiry date must be in the future.",
-        )
+    if not is_domestic and passport_dt:
+        if passport_dt.date() <= today:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passport expiry date must be in the future.",
+            )
         
     # Date overlap check: only if booking for self
     if not booking_data.booked_for:

@@ -33,6 +33,21 @@ const DESTINATION_IMAGES = {
   Default: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80"
 };
 
+const DOMESTIC_DESTINATIONS = ["goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh", "andaman", "lakshadweep", "ladakh", "darjeeling"];
+
+function isDomesticDestination(destName) {
+  if (!destName) return false;
+  return DOMESTIC_DESTINATIONS.includes(destName.trim().toLowerCase());
+}
+
+function formatCurrency(price, destName) {
+  if (price === undefined || price === null) return "";
+  if (isDomesticDestination(destName)) {
+    return `₹${Number(price).toLocaleString("en-IN")}`;
+  }
+  return `$${price}`;
+}
+
 function Dashboard() {
   const [bookings, setBookings] = useState([]);
   const [destinations] = useState([
@@ -123,6 +138,13 @@ function Dashboard() {
     setHotels([]);
     setOverlapWarning("");
     
+    if (isDomesticDestination(dest)) {
+      setPassportExpiry("N/A");
+      setFormErrors(prev => ({ ...prev, passportExpiry: "" }));
+    } else if (passportExpiry === "N/A") {
+      setPassportExpiry("");
+    }
+    
     if (!dest) return;
 
     setLoadingHotels(true);
@@ -147,7 +169,9 @@ function Dashboard() {
       passportExpiry: ""
     });
 
-    if (!selectedDest || !selectedHotel || !startDate || !endDate || !passportExpiry) {
+    const isDomestic = isDomesticDestination(selectedDest);
+
+    if (!selectedDest || !selectedHotel || !startDate || !endDate || (!isDomestic && !passportExpiry)) {
       setError("Please fill out all fields.");
       return;
     }
@@ -170,7 +194,6 @@ function Dashboard() {
 
     const start = parseDateLocal(startDate);
     const end = parseDateLocal(endDate);
-    const passport = parseDateLocal(passportExpiry);
 
     let hasErrors = false;
     const errors = { startDate: "", endDate: "", passportExpiry: "" };
@@ -185,9 +208,12 @@ function Dashboard() {
       hasErrors = true;
     }
 
-    if (passport <= today) {
-      errors.passportExpiry = "Passport expiry date must be in the future.";
-      hasErrors = true;
+    if (!isDomestic) {
+      const passport = parseDateLocal(passportExpiry);
+      if (passport <= today) {
+        errors.passportExpiry = "Passport expiry date must be in the future.";
+        hasErrors = true;
+      }
     }
 
     if (hasErrors) {
@@ -203,7 +229,7 @@ function Dashboard() {
         destination: selectedDest,
         start_date: startDate,
         end_date: endDate,
-        passport_expiry: passportExpiry,
+        passport_expiry: isDomestic ? "N/A" : passportExpiry,
       };
 
       if (bookForSomeoneElse) {
@@ -318,7 +344,7 @@ function Dashboard() {
                 </option>
                 {hotels.map((hotel) => (
                   <option key={hotel.id} value={hotel.id}>
-                    {hotel.name} (${hotel.price_per_night}/night)
+                    {hotel.name} ({formatCurrency(hotel.price_per_night, selectedDest)}/night)
                   </option>
                 ))}
               </select>
@@ -367,20 +393,27 @@ function Dashboard() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Passport Expiry Date</label>
-              <input
-                type="date"
-                value={passportExpiry}
-                onChange={(e) => {
-                  setPassportExpiry(e.target.value);
-                  setFormErrors(prev => ({ ...prev, passportExpiry: "" }));
-                  setOverlapWarning("");
-                }}
-                required
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${
-                  formErrors.passportExpiry ? "border-red-500 text-red-900" : "border-gray-300"
-                }`}
-              />
-              {formErrors.passportExpiry && (
+              {isDomesticDestination(selectedDest) ? (
+                <div className="w-full bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>Not required for domestic trips within India (Automatic Clearance)</span>
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  value={passportExpiry === "N/A" ? "" : passportExpiry}
+                  onChange={(e) => {
+                    setPassportExpiry(e.target.value);
+                    setFormErrors(prev => ({ ...prev, passportExpiry: "" }));
+                    setOverlapWarning("");
+                  }}
+                  required
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${
+                    formErrors.passportExpiry ? "border-red-500 text-red-900" : "border-gray-300"
+                  }`}
+                />
+              )}
+              {formErrors.passportExpiry && !isDomesticDestination(selectedDest) && (
                 <p className="text-red-600 text-xs mt-1">{formErrors.passportExpiry}</p>
               )}
             </div>
