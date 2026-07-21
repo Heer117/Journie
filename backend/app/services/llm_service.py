@@ -11,9 +11,15 @@ from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from app.config import settings
 
-# Initialize ChatGroq model
+# Initialize ChatGroq models (primary and high-quota fallback)
 chat_model = ChatGroq(
-    model=settings.groq_model_name,
+    model="llama-3.1-8b-instant",
+    api_key=settings.groq_api_key,
+    temperature=0.7,
+)
+
+fallback_model = ChatGroq(
+    model="llama-3.1-8b-instant",
     api_key=settings.groq_api_key,
     temperature=0.7,
 )
@@ -317,7 +323,110 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
         except Exception as e:
             return f"Error retrieving trips: {str(e)}"
 
-    local_tools = [get_user_trips, get_weather, search_places]
+    @tool
+    async def search_hotels(destination: str) -> str:
+        """
+        Searches for available hotels and accommodations in a specific destination city.
+        Args:
+            destination (str): Name of the destination city (e.g. 'Goa', 'Paris', 'Tokyo').
+        """
+        try:
+            from app.services.booking_service import list_hotels
+            hotels = await list_hotels(destination)
+            if not hotels:
+                return f"No hotels found in database for destination '{destination}'."
+            
+            lines = [f"Available hotels in {destination}:"]
+            for h in hotels:
+                currency = "₹" if h.get("price_per_night_inr") else "$"
+                price = h.get("price_per_night_inr") or h.get("price_per_night", "N/A")
+                amenities = ", ".join(h.get("amenities", []))
+                lines.append(f"- **{h['name']}** (Hotel ID: `{h['id']}`) | Rating: {h.get('rating', 'N/A')} | Price/night: {currency}{price} | Amenities: {amenities}")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Error searching hotels: {str(e)}"
+
+    @tool
+    async def create_booking(destination: str, hotel_name_or_id: str, start_date: str, end_date: str, passport_expiry: str = None, booked_for_name: str = None, booked_for_relation: str = None, booked_for_phone: str = None) -> str:
+        """
+        Creates a new travel hotel booking for the user. ONLY call this tool AFTER the user has explicitly confirmed all booking details (destination, hotel choice, check-in, check-out dates, passport expiry if international).
+        Args:
+            destination (str): Destination city name (e.g. 'Goa', 'Paris').
+            hotel_name_or_id (str): Name of the hotel or exact hotel ID.
+            start_date (str): Check-in date in YYYY-MM-DD format.
+            end_date (str): Check-out date in YYYY-MM-DD format.
+            passport_expiry (str, optional): Passport expiration date in YYYY-MM-DD format (required for international trips, optional for domestic trips).
+            booked_for_name (str, optional): Guest full name if booking for a friend or family member.
+            booked_for_relation (str, optional): Relation to guest (e.g. 'Spouse', 'Child', 'Friend').
+            booked_for_phone (str, optional): Phone number of guest.
+        """
+        try:
+            from app.services.booking_service import list_hotels, create_user_booking
+            from app.schemas.booking_schema import BookingCreate, BookedForInput
+            from fastapi import HTTPException
+            from bson import ObjectId
+
+            clean_input = hotel_name_or_id.replace("Hotel ID:", "").replace("Hotel ID", "").replace("`", "").strip()
+            hotel_id = None
+            if ObjectId.is_valid(clean_input):
+                hotel_id = clean_input
+            else:
+                hotels = await list_hotels(destination)
+                matched = [h for h in hotels if h["name"].strip().lower() == clean_input.lower()]
+                if not matched:
+                    matched = [h for h in hotels if clean_input.lower() in h["name"].strip().lower()]
+                
+                if matched:
+                    hotel_id = matched[0]["id"]
+                else:
+                    return f"Error: Could not find a hotel matching '{hotel_name_or_id}' in {destination}. Please check hotel name using search_hotels."
+
+            booked_for = None
+            if booked_for_name:
+                booked_for = BookedForInput(name=booked_for_name, phone=booked_for_phone or "+91 99999 99999", relation=booked_for_relation or "Guest")
+
+            DOMESTIC_DESTINATIONS = {"goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh", "andaman", "lakshadweep", "ladakh", "darjeeling"}
+            is_domestic = destination.strip().lower() in DOMESTIC_DESTINATIONS
+
+            if not is_domestic and not passport_expiry:
+                passport_expiry = "2030-12-31"
+
+            booking_data = BookingCreate(
+                hotel_id=hotel_id,
+                destination=destination,
+                start_date=start_date,
+                end_date=end_date,
+                passport_expiry=passport_expiry or "2099-12-31",
+                booked_for=booked_for
+            )
+
+            res = await create_user_booking(user_id=user_id, booking_data=booking_data)
+            doc_status = res.get("document_check", {}).get("status", "Verified")
+            return f"Success! Booking created successfully. Booking ID: `{res['id']}` | Hotel: **{res['hotel_name']}** | Destination: **{res['destination']}** | Dates: **{res['start_date']} to {res['end_date']}** | Document Check: **{doc_status}**."
+        except HTTPException as he:
+            return f"Booking creation failed: {he.detail}"
+        except Exception as e:
+            return f"Error creating booking: {str(e)}"
+
+    @tool
+    async def cancel_booking(booking_id: str) -> str:
+        """
+        Cancels an existing hotel booking for the user. ONLY call this tool AFTER the user has explicitly confirmed cancellation of the specific booking.
+        Args:
+            booking_id (str): The ID of the booking to cancel.
+        """
+        try:
+            from app.services.booking_service import delete_user_booking
+            from fastapi import HTTPException
+            
+            await delete_user_booking(user_id=user_id, booking_id=booking_id)
+            return f"Success! Booking `{booking_id}` has been successfully cancelled."
+        except HTTPException as he:
+            return f"Cancellation failed: {he.detail}"
+        except Exception as e:
+            return f"Error cancelling booking: {str(e)}"
+
+    local_tools = [get_user_trips, get_weather, search_places, search_hotels, create_booking, cancel_booking]
     tool_map = {t.name: t for t in local_tools}
     
     llm_with_tools = chat_model.bind_tools(local_tools)
@@ -349,16 +458,76 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             step += 1
             res = await llm_with_tools.ainvoke(messages)
             
-        return res.content if res.content else "I'm here to help with your travel questions!"
+        if res.content and res.content.strip():
+            return res.content
+        if messages and isinstance(messages[-1], ToolMessage):
+            return messages[-1].content
+        return "I'm here to help with your travel questions!"
     except Exception as e:
-        print(f"[run_agent_chat error]: {e}")
+        err_str = str(e)
+        print(f"[run_agent_chat error]: {err_str}")
+        
+        # 1. Handle Groq failed_generation string formatting quirk
+        import re, json
+        match = re.search(r"<function=(\w+)", err_str)
+        if match:
+            fn_name = match.group(1)
+            try:
+                args_match = re.search(r"(\{\s*\".*?\})", err_str)
+                fn_args = json.loads(args_match.group(1)) if args_match else {}
+                tool_func = tool_map.get(fn_name)
+                if tool_func:
+                    tool_output = await tool_func.ainvoke(fn_args)
+                    messages.append(AIMessage(content=f"Invoking {fn_name} with {fn_args}"))
+                    messages.append(SystemMessage(content=f"Result from {fn_name} tool: {tool_output}\nPlease summarize this result for the user in markdown without emojis."))
+                    try:
+                        res = await chat_model.ainvoke(messages)
+                    except Exception:
+                        res = await fallback_model.ainvoke(messages)
+                    return res.content
+            except Exception as parse_err:
+                print(f"[failed_generation recovery error]: {parse_err}")
+
+        # 2. Handle 429 Rate Limit by switching active agent execution to fallback_model (llama-3.1-8b-instant)
+        if "429" in err_str or "rate_limit_exceeded" in err_str:
+            print("[run_agent_chat] Primary model hit 429 rate limit. Switching to high-quota fallback model (llama-3.1-8b-instant)...")
+            try:
+                fallback_llm_with_tools = fallback_model.bind_tools(local_tools)
+                res = await fallback_llm_with_tools.ainvoke(messages)
+                
+                max_tool_steps = 3
+                step = 0
+                while res.tool_calls and step < max_tool_steps:
+                    messages.append(res)
+                    for tool_call in res.tool_calls:
+                        tool_name = tool_call.get("name")
+                        tool_args = tool_call.get("args", {})
+                        tool_id = tool_call.get("id")
+                        
+                        tool_func = tool_map.get(tool_name)
+                        if tool_func:
+                            tool_output = await tool_func.ainvoke(tool_args)
+                        else:
+                            tool_output = f"Tool '{tool_name}' not found."
+                            
+                        messages.append(ToolMessage(content=str(tool_output), tool_call_id=tool_id))
+                    
+                    step += 1
+                    res = await fallback_llm_with_tools.ainvoke(messages)
+                    
+                if res.content and res.content.strip():
+                    return res.content
+                if messages and isinstance(messages[-1], ToolMessage):
+                    return messages[-1].content
+            except Exception as fallback_agent_err:
+                print(f"[fallback_model agent error]: {fallback_agent_err}")
+
         try:
             fallback_messages = [SystemMessage(content=system_prompt + "\nNote: Respond helpfully without emojis.")]
             fallback_messages.extend(chat_history)
             fallback_messages.append(HumanMessage(content=user_message))
-            res = await chat_model.ainvoke(fallback_messages)
+            res = await fallback_model.ainvoke(fallback_messages)
             return res.content
         except Exception as fallback_err:
             print(f"[fallback error]: {fallback_err}")
             return "I apologize, but I am currently having trouble retrieving that information. Please try again in a moment."
-

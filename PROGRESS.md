@@ -1,6 +1,13 @@
 # Journie Progress Log
 
-## Status: Phase C (Full Trip Context + Weather Tool + SerpAPI Tool) Completed
+## Status: Phase D (Agentic Booking & Cancellation Tools) Completed
+
+### Phase D: Agentic Booking & Cancellation Tools (July 21, 2026)
+- **Agentic Booking & Cancellation Tools:** Registered `search_hotels`, `create_booking`, and `cancel_booking` as LangChain `@tool` functions in `llm_service.py`.
+- **Conversational Validation & Confirmation:** Updated prompt directives in `chat_routes.py` and tool definitions to conversationally collect required fields (destination, hotel choice, check-in, check-out dates, passport expiry if international) across turns and require user confirmation prior to calling booking/cancellation tools.
+- **Server-Side Validation Guardrails:** Reused `booking_service` functions (`create_user_booking` and `delete_user_booking`) within tools so agentic bookings enforce date checks, overlap rules, domestic passport bypasses, and automatic document verification creation.
+- **Resilient Tool Execution:** Added regex recovery logic in `run_agent_chat` to catch and parse raw LLM tool call strings (`<function=...></function>`) if Groq returns 400 format exceptions.
+- **Verification:** Created and executed `scripts/test_phase_d_agent_tools.py` verifying hotel lookup, booking creation, and soft-cancellation via the conversational agent. All tests passed.
 
 ### Phase C: Full Trip Context + Weather Tool + SerpAPI Tool (July 21, 2026)
 - **Agent Tools Scaffolded & Registered:** Created `get_user_trips`, `get_weather`, and `search_places` tools as LangChain `@tool` functions in `llm_service.py`.
