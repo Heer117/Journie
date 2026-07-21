@@ -57,77 +57,100 @@ function FloatingChatWidget() {
     }
   }
 
-  // Extract interactive quick options/chips from assistant message text
+  // Extract 100% clickable options/chips for EVERY step
   function getQuickReplyOptions(text) {
     if (!text) return [];
     const options = [];
+    const lower = text.toLowerCase();
 
-    // Extract bolded items from numbered or bulleted lists (e.g. 1. **The Oberoi Udaivilas**: ...)
-    const listLineRegex = /^\s*(?:\d+\.|\*|-)\s+\*\*(.*?)\*\*/gm;
-    let listMatch;
-    while ((listMatch = listLineRegex.exec(text)) !== null) {
-      const label = listMatch[1].replace(/Available hotels in.*/i, "").trim();
-      const lower = label.toLowerCase();
-      if (
-        label &&
-        !lower.includes("travel dates") &&
-        !lower.includes("hotel preference") &&
-        !lower.includes("hotel options") &&
-        !lower.includes("udaipur trip") &&
-        !lower.includes("trip details") &&
-        !lower.includes("destination") &&
-        label.length < 45
-      ) {
-        if (text.toLowerCase().includes("hotel") || text.toLowerCase().includes("udaipur") || text.toLowerCase().includes("paris")) {
+    // 1. Hotel selection detector (extract bold names from list items or markdown text)
+    if (lower.includes("hotel") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
+      const listLineRegex = /^\s*(?:\d+\.|\*|-)\s+\*\*(.*?)\*\*/gm;
+      let listMatch;
+      while ((listMatch = listLineRegex.exec(text)) !== null) {
+        const label = listMatch[1].replace(/Available hotels in.*/i, "").trim();
+        const l = label.toLowerCase();
+        if (
+          label &&
+          !l.includes("travel dates") &&
+          !l.includes("hotel preference") &&
+          !l.includes("hotel options") &&
+          !l.includes("trip details") &&
+          !l.includes("destination") &&
+          label.length < 45
+        ) {
           options.push(`Book ${label}`);
-        } else {
-          options.push(label);
+        }
+      }
+
+      // Standalone bold fallback
+      if (options.length === 0) {
+        const matches = text.matchAll(/\*\*(.*?)\*\*/g);
+        for (const m of matches) {
+          const name = m[1].trim();
+          const l = name.toLowerCase();
+          if (name && !l.includes("hotel id") && !l.includes("available hotels") && !l.includes("rating") && !l.includes("details") && name.length < 40) {
+            options.push(`Book ${name}`);
+          }
         }
       }
     }
 
-    // Fallback regex for standalone bold items if no list match
-    if (options.length === 0 && (text.includes("Available hotels") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:"))) {
-      const matches = text.matchAll(/\*\*(.*?)\*\*/g);
-      for (const m of matches) {
-        const name = m[1].replace(/Available hotels in.*/i, "").trim();
-        const lower = name.toLowerCase();
-        if (name && !lower.includes("hotel id") && !lower.includes("available hotels") && !lower.includes("rating") && name.length < 40) {
-          options.push(`Book ${name}`);
-        }
-      }
+    // 2. Dates / Check-in detector
+    if (lower.includes("date") || lower.includes("check-in") || lower.includes("when would you like") || lower.includes("travel dates")) {
+      options.push("2026-08-10 to 2026-08-15");
+      options.push("2026-09-12 to 2026-09-15");
+      options.push("2026-10-10 to 2026-10-15");
+      options.push("2026-12-20 to 2026-12-25");
     }
 
-    // 2. Action Confirmation detector
-    if (text.toLowerCase().includes("confirm") || text.toLowerCase().includes("would you like me to proceed") || text.toLowerCase().includes("proceed with this booking")) {
+    // 3. Destination / Where detector
+    if (lower.includes("destination") || lower.includes("where would you like") || lower.includes("which city")) {
+      options.push("Udaipur");
+      options.push("Goa");
+      options.push("Bali");
+      options.push("Paris");
+      options.push("Tokyo");
+      options.push("Manali");
+      options.push("Jaipur");
+      options.push("London");
+    }
+
+    // 4. Passport expiry detector
+    if (lower.includes("passport")) {
+      options.push("2028-12-31");
+      options.push("2030-05-15");
+      options.push("2032-08-20");
+    }
+
+    // 5. Action Confirmation detector
+    if (lower.includes("confirm") || lower.includes("proceed") || lower.includes("would you like me to proceed")) {
       options.push("Yes, confirm and proceed with booking");
       options.push("No, cancel this request");
     }
 
-    // 3. Cancellation confirmation
-    if (text.toLowerCase().includes("cancel your booking") || text.toLowerCase().includes("confirm cancellation")) {
+    // 6. Cancellation detector
+    if (lower.includes("cancel your booking") || lower.includes("confirm cancellation")) {
       options.push("Yes, confirm cancellation");
       options.push("No, keep booking");
     }
 
-    // 4. Destination selector
-    if (text.toLowerCase().includes("destination") || text.toLowerCase().includes("where would you like to travel") || text.toLowerCase().includes("which city")) {
-      options.push("Paris");
-      options.push("Goa");
-      options.push("Bali");
-      options.push("Udaipur");
-      options.push("Tokyo");
-      options.push("London");
+    // 7. General starter / help fallback
+    if (options.length === 0) {
+      if (lower.includes("hello") || lower.includes("welcome") || lower.includes("assist") || lower.includes("help")) {
+        options.push("Book a new trip");
+        options.push("Cancel an active trip");
+        options.push("Check my trip weather");
+      }
     }
 
-    // Deduplicate and return top 6
     return Array.from(new Set(options)).slice(0, 6);
   }
 
   const defaultStarterOptions = [
-    "Book a new trip",
-    "What hotels are in Paris?",
-    "Check my trip weather",
+    "Book a trip to Udaipur",
+    "Book a trip to Paris",
+    "Check weather for my trip",
     "Cancel an active trip",
   ];
 
@@ -152,7 +175,7 @@ function FloatingChatWidget() {
               <Sparkles className="w-5 h-5 text-blue-100" />
               <div>
                 <h3 className="font-bold text-sm leading-none">Journie Assistant</h3>
-                <span className="text-[10px] text-blue-100">Live booking & cancellation support</span>
+                <span className="text-[10px] text-blue-100">Live 100% Clickable Agent</span>
               </div>
             </div>
             <button
@@ -169,10 +192,10 @@ function FloatingChatWidget() {
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-4 text-gray-500">
                 <MessageSquare className="w-10 h-10 text-blue-500/80 mb-2" />
-                <p className="text-sm font-bold text-gray-800">Journie Travel Agent</p>
-                <p className="text-xs text-gray-500 mt-1 mb-4">I can help you search hotels, book trips, check weather, or manage cancellations step-by-step.</p>
+                <p className="text-sm font-bold text-gray-800">Journie Interactive Agent</p>
+                <p className="text-xs text-gray-500 mt-1 mb-4">Click any option below to book, cancel, or check weather step-by-step.</p>
                 
-                {/* Default Starter MCQ Chips */}
+                {/* Default Starter Options */}
                 <div className="w-full space-y-2">
                   <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider text-left px-1">Select an option to start:</p>
                   <div className="flex flex-col gap-1.5 w-full">
@@ -180,7 +203,7 @@ function FloatingChatWidget() {
                       <button
                         key={idx}
                         onClick={() => sendMessage(opt)}
-                        className="w-full text-left text-xs bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-xl transition-all flex items-center justify-between shadow-xs cursor-pointer group"
+                        className="w-full text-left text-xs bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 text-gray-700 hover:text-blue-600 font-semibold px-3 py-2.5 rounded-xl transition-all flex items-center justify-between shadow-xs cursor-pointer group"
                       >
                         <span>{opt}</span>
                         <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
@@ -231,7 +254,7 @@ function FloatingChatWidget() {
                       )}
                     </div>
 
-                    {/* Render Quick Reply Option Buttons / Chips */}
+                    {/* Render 100% Clickable Option Chips */}
                     {isLastAssistant && options.length > 0 && (
                       <div className="mt-2.5 flex flex-wrap gap-1.5 max-w-[92%] pl-1">
                         {options.map((optText, optIdx) => (
@@ -270,7 +293,7 @@ function FloatingChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type message or select an option above..."
+              placeholder="Click an option above or type..."
             />
             <button
               onClick={() => sendMessage()}
