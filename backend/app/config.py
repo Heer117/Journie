@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from typing import Optional
  
  
 class Settings(BaseSettings):
@@ -9,6 +10,9 @@ class Settings(BaseSettings):
     # Groq LLM
     groq_api_key: str
     groq_model_name: str = "llama-3.3-70b-versatile"
+    
+    # SerpAPI
+    serpapi_api_key: Optional[str] = None
  
     # Auth (used from Day 4 onward)
     jwt_secret: str = "change-me-in-env"

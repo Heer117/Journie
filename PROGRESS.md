@@ -1,6 +1,13 @@
 # Journie Progress Log
 
-## Status: Phase H (Expand Destination & Hotel Dataset) Completed
+## Status: Phase C (Full Trip Context + Weather Tool + SerpAPI Tool) Completed
+
+### Phase C: Full Trip Context + Weather Tool + SerpAPI Tool (July 21, 2026)
+- **Agent Tools Scaffolded & Registered:** Created `get_user_trips`, `get_weather`, and `search_places` tools as LangChain `@tool` functions in `llm_service.py`.
+- **Dynamic User Trip Retrieval (`get_user_trips`):** Replaced manual UI trip-selection dropdown in `FloatingChatWidget.jsx` with an autonomous agent tool. The assistant queries MongoDB dynamically for the user's active/past bookings, passport expiry, and document check statuses whenever requested in conversation.
+- **Live Weather Integration (`get_weather`):** Integrated Open-Meteo geocoding and daily forecast API (with fallbacks for out-of-range dates and WMO code descriptions) to retrieve real-time weather forecasts for any destination.
+- **Search & Attraction Research (`search_places`):** Integrated SerpAPI with DuckDuckGo fallback for place recommendations, itineraries, and top sights.
+- **Verification:** Created and executed `scripts/test_phase_c_agent_tools.py` verifying tool invocation, API queries, and output formatting. All tests passed.
 
 ### Phase H: Expand Destination & Hotel Dataset (July 20, 2026)
 - **Hotels & Destinations Expansion:** Expanded the dataset in `seed_hotels.py` from 5 to 17 destinations (6 domestic: Goa, Manali, Jaipur, Udaipur, Kerala, Rishikesh; 11 international: Tokyo, Paris, London, Rome, New York, Thailand, Dubai, Singapore, Bali, Switzerland, Maldives), seeding 4 unique hotels per destination (68 hotels total) with realistic pricing, ratings, descriptions, and amenities.

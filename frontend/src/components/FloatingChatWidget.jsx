@@ -10,8 +10,6 @@ function FloatingChatWidget() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [bookings, setBookings] = useState([]);
-  const [selectedBookingId, setSelectedBookingId] = useState("");
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to the bottom of messages
@@ -20,25 +18,6 @@ function FloatingChatWidget() {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
-
-  // Fetch bookings when widget is open and user is authenticated
-  useEffect(() => {
-    if (isOpen && isAuthenticated) {
-      apiClient
-        .get("/bookings/")
-        .then((response) => {
-          setBookings(response.data);
-          // If the currently selected booking is no longer in the list, reset it
-          const bookingIds = response.data.map((b) => b.id);
-          if (selectedBookingId && !bookingIds.includes(selectedBookingId)) {
-            setSelectedBookingId("");
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching bookings for chat dropdown:", error);
-        });
-    }
-  }, [isOpen, isAuthenticated]);
 
   // Hide the widget completely if user is not logged in
   if (!isAuthenticated) {
@@ -56,7 +35,6 @@ function FloatingChatWidget() {
     try {
       const response = await apiClient.post("/chat/", {
         message: userMessage.content,
-        booking_id: selectedBookingId || null,
       });
 
       const assistantMessage = { role: "assistant", content: response.data.reply };
@@ -111,28 +89,6 @@ function FloatingChatWidget() {
               <X className="w-5 h-5" />
             </button>
           </div>
-
-          {/* Booking Context Dropdown */}
-          {bookings.length > 0 && (
-            <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between gap-2 flex-shrink-0">
-              <label htmlFor="booking-context-select" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Trip Context:
-              </label>
-              <select
-                id="booking-context-select"
-                value={selectedBookingId}
-                onChange={(e) => setSelectedBookingId(e.target.value)}
-                className="text-xs bg-white border border-gray-300 rounded-lg px-2 py-1 text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 max-w-[220px] truncate"
-              >
-                <option value="">General Support (None)</option>
-                {bookings.map((booking) => (
-                  <option key={booking.id} value={booking.id}>
-                    {booking.destination} - {booking.hotel_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">

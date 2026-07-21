@@ -60,10 +60,11 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
         )
 
     # Run agent executor
-    reply_text = run_agent_chat(
+    reply_text = await run_agent_chat(
         system_prompt=system_content,
         user_message=request.message,
         chat_history=langchain_history,
+        user_id=user_id
     )
 
     # Add the current exchange to conversation memory
