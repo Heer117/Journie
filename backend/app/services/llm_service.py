@@ -251,18 +251,20 @@ def deserialize_messages(messages_list: list[dict]) -> list[BaseMessage]:
 
 
 async def run_agent_chat(system_prompt: str, user_message: str, chat_history: list[BaseMessage], user_id: str) -> str:
+    from langchain_core.messages import ToolMessage
+
     @tool
     async def get_user_trips() -> str:
         """
-        Retrieves all the travel bookings, itineraries, and schedule details for the active user.
-        Use this tool whenever the user asks about their own bookings, trip dates, or schedules.
+        Retrieves all travel bookings, itineraries, and schedule details for the active user.
+        Use this tool when the user asks about their own bookings, trip dates, or schedules.
         """
         try:
             cursor = bookings_collection.find({"user_id": user_id})
             bookings = await cursor.to_list(length=100)
             
             if not bookings:
-                return "You have no bookings recorded yet."
+                return "The user currently has no bookings recorded in the system."
             
             lines = []
             for b in bookings:
@@ -279,13 +281,47 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             return f"Error retrieving trips: {str(e)}"
 
     local_tools = [get_user_trips, get_weather, search_places]
+    tool_map = {t.name: t for t in local_tools}
     
-    local_agent = create_tool_calling_agent(chat_model, local_tools, agent_prompt)
-    local_executor = AgentExecutor(agent=local_agent, tools=local_tools, verbose=True)
+    llm_with_tools = chat_model.bind_tools(local_tools)
     
-    response = await local_executor.ainvoke({
-        "system_prompt": system_prompt,
-        "input": user_message,
-        "chat_history": chat_history,
-    })
-    return response["output"]
+    messages = [SystemMessage(content=system_prompt)]
+    messages.extend(chat_history)
+    messages.append(HumanMessage(content=user_message))
+    
+    try:
+        res = await llm_with_tools.ainvoke(messages)
+        
+        max_tool_steps = 3
+        step = 0
+        while res.tool_calls and step < max_tool_steps:
+            messages.append(res)
+            for tool_call in res.tool_calls:
+                tool_name = tool_call.get("name")
+                tool_args = tool_call.get("args", {})
+                tool_id = tool_call.get("id")
+                
+                tool_func = tool_map.get(tool_name)
+                if tool_func:
+                    tool_output = await tool_func.ainvoke(tool_args)
+                else:
+                    tool_output = f"Tool '{tool_name}' not found."
+                    
+                messages.append(ToolMessage(content=str(tool_output), tool_call_id=tool_id))
+            
+            step += 1
+            res = await llm_with_tools.ainvoke(messages)
+            
+        return res.content if res.content else "I'm here to help with your travel questions!"
+    except Exception as e:
+        print(f"[run_agent_chat error]: {e}")
+        try:
+            fallback_messages = [SystemMessage(content=system_prompt + "\nNote: Respond helpfully without emojis.")]
+            fallback_messages.extend(chat_history)
+            fallback_messages.append(HumanMessage(content=user_message))
+            res = await chat_model.ainvoke(fallback_messages)
+            return res.content
+        except Exception as fallback_err:
+            print(f"[fallback error]: {fallback_err}")
+            return "I apologize, but I am currently having trouble retrieving that information. Please try again in a moment."
+
