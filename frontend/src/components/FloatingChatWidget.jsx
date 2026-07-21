@@ -40,11 +40,8 @@ function FloatingChatWidget() {
       const assistantMessage = { role: "assistant", content: response.data.reply };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Fire booking-updated event to update the dashboard scheduled trips instantly
-      const replyLower = response.data.reply.toLowerCase();
-      if (replyLower.includes("booking id") || replyLower.includes("booked") || replyLower.includes("cancelled") || replyLower.includes("created") || replyLower.includes("success")) {
-        window.dispatchEvent(new CustomEvent("booking-updated"));
-      }
+      // Always fire booking-updated event on any chat reply to keep dashboard perfectly in sync
+      window.dispatchEvent(new CustomEvent("booking-updated"));
     } catch (error) {
       console.error("Chat request failed:", error);
       setMessages((prev) => [
