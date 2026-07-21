@@ -52,24 +52,61 @@ async def get_weather(destination: str, date: str) -> str:
     except ValueError:
         return f"Error: Date '{date}' must be in YYYY-MM-DD format."
         
+    # Canonical coordinate overrides for core travel destinations to guarantee exact location matching
+    DESTINATION_COORDINATES = {
+        "goa": (15.2993, 74.1240, "Goa", "India"),
+        "bali": (-8.7481, 115.1672, "Bali", "Indonesia"),
+        "ubud": (-8.5069, 115.2625, "Ubud", "Indonesia"),
+        "manali": (32.2432, 77.1892, "Manali", "India"),
+        "jaipur": (26.9124, 75.7873, "Jaipur", "India"),
+        "udaipur": (24.5854, 73.7125, "Udaipur", "India"),
+        "kerala": (10.8505, 76.2711, "Kerala", "India"),
+        "rishikesh": (30.0869, 78.2676, "Rishikesh", "India"),
+        "tokyo": (35.6762, 139.6503, "Tokyo", "Japan"),
+        "paris": (48.8566, 2.3522, "Paris", "France"),
+        "london": (51.5074, -0.1278, "London", "United Kingdom"),
+        "rome": (41.9028, 12.4964, "Rome", "Italy"),
+        "new york": (40.7128, -74.0060, "New York", "United States"),
+        "thailand": (13.7563, 100.5018, "Bangkok", "Thailand"),
+        "dubai": (25.2048, 55.2708, "Dubai", "United Arab Emirates"),
+        "singapore": (1.3521, 103.8198, "Singapore", "Singapore"),
+        "maldives": (4.1755, 73.5093, "Male", "Maldives"),
+        "switzerland": (46.8182, 8.2275, "Zurich", "Switzerland"),
+    }
+
+    dest_key = destination.strip().lower()
+    if dest_key in DESTINATION_COORDINATES:
+        lat, lon, resolved_name, country = DESTINATION_COORDINATES[dest_key]
+    else:
+        async with httpx.AsyncClient() as client:
+            geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={destination}&count=10&language=en&format=json"
+            try:
+                geo_res = await client.get(geo_url, timeout=8.0)
+                if geo_res.status_code != 200:
+                    return f"Error: Could not search geocoding coordinates for '{destination}'."
+                
+                geo_data = geo_res.json()
+                results = geo_data.get("results")
+                if not results:
+                    return f"Error: Destination '{destination}' could not be resolved to coordinates."
+                
+                dest_lower = destination.strip().lower()
+                exact_matches = [r for r in results if r.get("name", "").lower() == dest_lower]
+                if exact_matches:
+                    exact_matches.sort(key=lambda r: r.get("population", 0) or 0, reverse=True)
+                    best_match = exact_matches[0]
+                else:
+                    results.sort(key=lambda r: r.get("population", 0) or 0, reverse=True)
+                    best_match = results[0]
+                
+                lat = best_match["latitude"]
+                lon = best_match["longitude"]
+                resolved_name = best_match.get("name", destination)
+                country = best_match.get("country", "")
+            except Exception as e:
+                return f"Error resolving destination coordinates: {str(e)}"
+
     async with httpx.AsyncClient() as client:
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={destination}&count=1&language=en&format=json"
-        try:
-            geo_res = await client.get(geo_url, timeout=8.0)
-            if geo_res.status_code != 200:
-                return f"Error: Could not search geocoding coordinates for '{destination}'."
-            
-            geo_data = geo_res.json()
-            results = geo_data.get("results")
-            if not results:
-                return f"Error: Destination '{destination}' could not be resolved to coordinates."
-            
-            lat = results[0]["latitude"]
-            lon = results[0]["longitude"]
-            resolved_name = results[0].get("name", destination)
-            country = results[0].get("country", "")
-        except Exception as e:
-            return f"Error resolving destination coordinates: {str(e)}"
             
         weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&start_date={date}&end_date={date}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto"
         try:
