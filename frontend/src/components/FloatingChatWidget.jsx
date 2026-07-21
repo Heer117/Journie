@@ -62,12 +62,37 @@ function FloatingChatWidget() {
     if (!text) return [];
     const options = [];
 
-    // 1. Hotel selection detector
-    if (text.includes("Available hotels") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
+    // Extract bolded items from numbered or bulleted lists (e.g. 1. **The Oberoi Udaivilas**: ...)
+    const listLineRegex = /^\s*(?:\d+\.|\*|-)\s+\*\*(.*?)\*\*/gm;
+    let listMatch;
+    while ((listMatch = listLineRegex.exec(text)) !== null) {
+      const label = listMatch[1].replace(/Available hotels in.*/i, "").trim();
+      const lower = label.toLowerCase();
+      if (
+        label &&
+        !lower.includes("travel dates") &&
+        !lower.includes("hotel preference") &&
+        !lower.includes("hotel options") &&
+        !lower.includes("udaipur trip") &&
+        !lower.includes("trip details") &&
+        !lower.includes("destination") &&
+        label.length < 45
+      ) {
+        if (text.toLowerCase().includes("hotel") || text.toLowerCase().includes("udaipur") || text.toLowerCase().includes("paris")) {
+          options.push(`Book ${label}`);
+        } else {
+          options.push(label);
+        }
+      }
+    }
+
+    // Fallback regex for standalone bold items if no list match
+    if (options.length === 0 && (text.includes("Available hotels") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:"))) {
       const matches = text.matchAll(/\*\*(.*?)\*\*/g);
       for (const m of matches) {
         const name = m[1].replace(/Available hotels in.*/i, "").trim();
-        if (name && !name.toLowerCase().includes("hotel id") && !name.toLowerCase().includes("available hotels") && name.length < 40) {
+        const lower = name.toLowerCase();
+        if (name && !lower.includes("hotel id") && !lower.includes("available hotels") && !lower.includes("rating") && name.length < 40) {
           options.push(`Book ${name}`);
         }
       }
@@ -90,9 +115,9 @@ function FloatingChatWidget() {
       options.push("Paris");
       options.push("Goa");
       options.push("Bali");
+      options.push("Udaipur");
       options.push("Tokyo");
       options.push("London");
-      options.push("Dubai");
     }
 
     // Deduplicate and return top 6
