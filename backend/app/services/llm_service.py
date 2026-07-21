@@ -293,6 +293,16 @@ def deserialize_messages(messages_list: list[dict]) -> list[BaseMessage]:
     return langchain_messages
 
 
+def _clean_response(text: str) -> str:
+    if not text:
+        return "I'm here to help with your travel questions!"
+    import re
+    cleaned = re.sub(r"<function=.*?(?:</function>|/>|>)", "", text, flags=re.DOTALL).strip()
+    if not cleaned:
+        return "I am here to help you plan your trip! How can I assist you today?"
+    return cleaned
+
+
 async def run_agent_chat(system_prompt: str, user_message: str, chat_history: list[BaseMessage], user_id: str) -> str:
     from langchain_core.messages import ToolMessage
 
@@ -448,6 +458,17 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                 tool_id = tool_call.get("id")
                 
                 tool_func = tool_map.get(tool_name)
+                if not tool_func:
+                    fn_lower = (tool_name or "").lower()
+                    if "hotel" in fn_lower:
+                        tool_func = tool_map.get("search_hotels")
+                    elif "trip" in fn_lower or "booking" in fn_lower or "destination" in fn_lower:
+                        tool_func = tool_map.get("get_user_trips")
+                    elif "weather" in fn_lower:
+                        tool_func = tool_map.get("get_weather")
+                    elif "place" in fn_lower or "sight" in fn_lower or "attraction" in fn_lower:
+                        tool_func = tool_map.get("search_places")
+
                 if tool_func:
                     tool_output = await tool_func.ainvoke(tool_args)
                 else:
@@ -459,32 +480,77 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             res = await llm_with_tools.ainvoke(messages)
             
         if res.content and res.content.strip():
-            return res.content
+            return _clean_response(res.content)
         if messages and isinstance(messages[-1], ToolMessage):
-            return messages[-1].content
+            try:
+                messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
+                summary_res = await chat_model.ainvoke(messages)
+                if summary_res.content and summary_res.content.strip():
+                    return _clean_response(summary_res.content)
+            except Exception as summary_err:
+                print(f"[summary generation error]: {summary_err}")
+            return _clean_response(messages[-1].content)
         return "I'm here to help with your travel questions!"
     except Exception as e:
         err_str = str(e)
         print(f"[run_agent_chat error]: {err_str}")
         
         # 1. Handle Groq failed_generation string formatting quirk
-        import re, json
+        import re, json, ast
         match = re.search(r"<function=(\w+)", err_str)
         if match:
             fn_name = match.group(1)
             try:
-                args_match = re.search(r"(\{\s*\".*?\})", err_str)
-                fn_args = json.loads(args_match.group(1)) if args_match else {}
+                args_match = re.search(r"(\{.*?\})", err_str)
+                fn_args = {}
+                if args_match:
+                    raw_args = args_match.group(1).rstrip(";")
+                    try:
+                        fn_args = json.loads(raw_args)
+                    except Exception:
+                        try:
+                            fn_args = ast.literal_eval(raw_args)
+                        except Exception:
+                            fn_args = {}
+
+                # Fuzzy resolve tool name if hallucinated by model (e.g. check_user_destination -> get_user_trips)
                 tool_func = tool_map.get(fn_name)
+                if not tool_func:
+                    fn_lower = fn_name.lower()
+                    if "hotel" in fn_lower:
+                        tool_func = tool_map.get("search_hotels")
+                    elif "trip" in fn_lower or "booking" in fn_lower or "destination" in fn_lower:
+                        tool_func = tool_map.get("get_user_trips")
+                    elif "weather" in fn_lower:
+                        tool_func = tool_map.get("get_weather")
+                    elif "place" in fn_lower or "sight" in fn_lower or "attraction" in fn_lower:
+                        tool_func = tool_map.get("search_places")
+
                 if tool_func:
-                    tool_output = await tool_func.ainvoke(fn_args)
-                    messages.append(AIMessage(content=f"Invoking {fn_name} with {fn_args}"))
-                    messages.append(SystemMessage(content=f"Result from {fn_name} tool: {tool_output}\nPlease summarize this result for the user in markdown without emojis."))
+                    try:
+                        tool_output = await tool_func.ainvoke(fn_args)
+                    except Exception:
+                        if hasattr(tool_func, "coroutine") and callable(tool_func.coroutine):
+                            tool_output = await tool_func.coroutine(**fn_args)
+                        else:
+                            raise
+                    messages.append(AIMessage(content=f"Invoking tool with {fn_args}"))
+                    messages.append(SystemMessage(content=f"Result from tool: {tool_output}\nPlease summarize this result into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
                     try:
                         res = await chat_model.ainvoke(messages)
                     except Exception:
                         res = await fallback_model.ainvoke(messages)
-                    return res.content
+                    return _clean_response(res.content)
+                else:
+                    # Model hallucinated an unresolvable tool name; answer conversationally in standard markdown
+                    try:
+                        fallback_messages = [SystemMessage(content=system_prompt + "\nNote: Provide a helpful, clear, and structured answer in standard markdown without using emojis.")]
+                        fallback_messages.extend(chat_history)
+                        fallback_messages.append(HumanMessage(content=user_message))
+                        res = await fallback_model.ainvoke(fallback_messages)
+                        return _clean_response(res.content)
+                    except Exception:
+                        pass
             except Exception as parse_err:
                 print(f"[failed_generation recovery error]: {parse_err}")
 
@@ -518,6 +584,13 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                 if res.content and res.content.strip():
                     return res.content
                 if messages and isinstance(messages[-1], ToolMessage):
+                    try:
+                        messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
+                        summary_res = await fallback_model.ainvoke(messages)
+                        if summary_res.content and summary_res.content.strip():
+                            return summary_res.content
+                    except Exception:
+                        pass
                     return messages[-1].content
             except Exception as fallback_agent_err:
                 print(f"[fallback_model agent error]: {fallback_agent_err}")
