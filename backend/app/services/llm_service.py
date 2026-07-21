@@ -11,7 +11,7 @@ from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from app.config import settings
 
-# Initialize ChatGroq models (primary and high-quota fallback)
+# Initialize ChatGroq models with distinct rate-limit buckets
 chat_model = ChatGroq(
     model="llama-3.1-8b-instant",
     api_key=settings.groq_api_key,
@@ -19,7 +19,13 @@ chat_model = ChatGroq(
 )
 
 fallback_model = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
+    api_key=settings.groq_api_key,
+    temperature=0.7,
+)
+
+gemma_model = ChatGroq(
+    model="gemma2-9b-it",
     api_key=settings.groq_api_key,
     temperature=0.7,
 )
@@ -554,56 +560,61 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             except Exception as parse_err:
                 print(f"[failed_generation recovery error]: {parse_err}")
 
-        # 2. Handle 429 Rate Limit by switching active agent execution to fallback_model (llama-3.1-8b-instant)
+        # 2. Handle 429 Rate Limit by trying fallback models with distinct quota limits
         if "429" in err_str or "rate_limit_exceeded" in err_str:
-            print("[run_agent_chat] Primary model hit 429 rate limit. Switching to high-quota fallback model (llama-3.1-8b-instant)...")
-            try:
-                fallback_llm_with_tools = fallback_model.bind_tools(local_tools)
-                res = await fallback_llm_with_tools.ainvoke(messages)
-                
-                max_tool_steps = 3
-                step = 0
-                while res.tool_calls and step < max_tool_steps:
-                    messages.append(res)
-                    for tool_call in res.tool_calls:
-                        tool_name = tool_call.get("name")
-                        tool_args = tool_call.get("args", {})
-                        tool_id = tool_call.get("id")
-                        
-                        tool_func = tool_map.get(tool_name)
-                        if tool_func:
-                            tool_output = await tool_func.ainvoke(tool_args)
-                        else:
-                            tool_output = f"Tool '{tool_name}' not found."
+            print("[run_agent_chat] Primary model hit 429 rate limit. Attempting multi-model failover...")
+            for alt_model in [fallback_model, gemma_model]:
+                try:
+                    alt_llm_with_tools = alt_model.bind_tools(local_tools)
+                    res = await alt_llm_with_tools.ainvoke(messages)
+                    
+                    max_tool_steps = 3
+                    step = 0
+                    while res.tool_calls and step < max_tool_steps:
+                        messages.append(res)
+                        for tool_call in res.tool_calls:
+                            tool_name = tool_call.get("name")
+                            tool_args = tool_call.get("args", {})
+                            tool_id = tool_call.get("id")
                             
-                        messages.append(ToolMessage(content=str(tool_output), tool_call_id=tool_id))
-                    
-                    step += 1
-                    res = await fallback_llm_with_tools.ainvoke(messages)
-                    
-                if res.content and res.content.strip():
-                    return res.content
-                if messages and isinstance(messages[-1], ToolMessage):
-                    try:
-                        messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
-                        summary_res = await fallback_model.ainvoke(messages)
-                        if summary_res.content and summary_res.content.strip():
-                            return summary_res.content
-                    except Exception:
-                        pass
-                    return messages[-1].content
-            except Exception as fallback_agent_err:
-                print(f"[fallback_model agent error]: {fallback_agent_err}")
+                            tool_func = tool_map.get(tool_name)
+                            if tool_func:
+                                tool_output = await tool_func.ainvoke(tool_args)
+                            else:
+                                tool_output = f"Tool '{tool_name}' not found."
+                                
+                            messages.append(ToolMessage(content=str(tool_output), tool_call_id=tool_id))
+                        
+                        step += 1
+                        res = await alt_llm_with_tools.ainvoke(messages)
+                        
+                    if res.content and res.content.strip():
+                        return _clean_response(res.content)
+                    if messages and isinstance(messages[-1], ToolMessage):
+                        try:
+                            messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
+                            summary_res = await alt_model.ainvoke(messages)
+                            if summary_res.content and summary_res.content.strip():
+                                return _clean_response(summary_res.content)
+                        except Exception:
+                            pass
+                        return _clean_response(messages[-1].content)
+                except Exception as alt_err:
+                    print(f"[alt_model error]: {alt_err}")
 
-        try:
-            fallback_messages = [SystemMessage(content=system_prompt + "\nNote: Respond helpfully without emojis.")]
-            fallback_messages.extend(chat_history)
-            fallback_messages.append(HumanMessage(content=user_message))
-            res = await fallback_model.ainvoke(fallback_messages)
-            return res.content
-        except Exception as fallback_err:
-            print(f"[fallback error]: {fallback_err}")
-            return "I apologize, but I am currently having trouble retrieving that information. Please try again in a moment."
+        # Final Fallback to plain completion across models
+        for alt_model in [fallback_model, gemma_model, chat_model]:
+            try:
+                fallback_messages = [SystemMessage(content=system_prompt + "\nNote: Respond helpfully in 1 short sentence without emojis.")]
+                fallback_messages.extend(chat_history)
+                fallback_messages.append(HumanMessage(content=user_message))
+                res = await alt_model.ainvoke(fallback_messages)
+                if res.content and res.content.strip():
+                    return _clean_response(res.content)
+            except Exception as fb_err:
+                print(f"[fallback model attempt failed]: {fb_err}")
+
+        return "To get started with your trip, which destination would you like to visit?"
 
 
 async def get_booking_suggestions_llm(destination: str, start_date: str, end_date: str) -> str:
