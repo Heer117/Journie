@@ -39,6 +39,12 @@ function FloatingChatWidget() {
 
       const assistantMessage = { role: "assistant", content: response.data.reply };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Fire booking-updated event to update the dashboard scheduled trips instantly
+      const replyLower = response.data.reply.toLowerCase();
+      if (replyLower.includes("booking id") || replyLower.includes("booked") || replyLower.includes("cancelled") || replyLower.includes("created") || replyLower.includes("success")) {
+        window.dispatchEvent(new CustomEvent("booking-updated"));
+      }
     } catch (error) {
       console.error("Chat request failed:", error);
       setMessages((prev) => [
@@ -60,96 +66,117 @@ function FloatingChatWidget() {
   // Extract 100% clickable options/chips for EVERY step
   function getQuickReplyOptions(text) {
     if (!text) return [];
-    const options = [];
     const lower = text.toLowerCase();
 
-    // 1. Hotel selection detector (extract bold names from list items or markdown text)
-    if (lower.includes("hotel") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
+    // 0. Stop displaying options if task is successfully complete
+    if (
+      lower.includes("booking confirmed") ||
+      lower.includes("successfully created") ||
+      lower.includes("trip has been booked") ||
+      lower.includes("successfully cancelled") ||
+      lower.includes("cancellation has been confirmed") ||
+      lower.includes("booking has been cancelled") ||
+      lower.includes("cancelled successfully") ||
+      lower.includes("here is the weather forecast") ||
+      (lower.includes("booking id") && (lower.includes("created") || lower.includes("success") || lower.includes("confirm")))
+    ) {
+      return [];
+    }
+
+    const options = [];
+
+    // 1. Hotel selection (highest priority if hotel is mentioned or listed)
+    if (lower.includes("which hotel") || lower.includes("hotel preference") || lower.includes("select a hotel") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
       const listLineRegex = /^\s*(?:\d+\.|\*|-)\s+\*\*(.*?)\*\*/gm;
       let listMatch;
       while ((listMatch = listLineRegex.exec(text)) !== null) {
-        const label = listMatch[1].replace(/Available hotels in.*/i, "").trim();
+        const label = listMatch[1].trim();
         const l = label.toLowerCase();
-        if (
-          label &&
-          !l.includes("travel dates") &&
-          !l.includes("hotel preference") &&
-          !l.includes("hotel options") &&
-          !l.includes("trip details") &&
-          !l.includes("destination") &&
-          label.length < 45
-        ) {
-          options.push(`Book ${label}`);
+        if (label && !l.includes("travel dates") && !l.includes("hotel preference") && label.length < 45) {
+          options.push({ label: `Book ${label}`, value: `Book ${label}` });
         }
       }
-
-      // Standalone bold fallback
       if (options.length === 0) {
         const matches = text.matchAll(/\*\*(.*?)\*\*/g);
         for (const m of matches) {
           const name = m[1].trim();
           const l = name.toLowerCase();
-          if (name && !l.includes("hotel id") && !l.includes("available hotels") && !l.includes("rating") && !l.includes("details") && name.length < 40) {
-            options.push(`Book ${name}`);
+          if (name && !l.includes("hotel id") && !l.includes("available hotels") && !l.includes("rating") && name.length < 45) {
+            options.push({ label: `Book ${name}`, value: `Book ${name}` });
           }
         }
       }
+      if (options.length > 0) return options.slice(0, 6);
     }
 
-    // 2. Dates / Check-in detector
-    if (lower.includes("date") || lower.includes("check-in") || lower.includes("check-out") || lower.includes("when would you like") || lower.includes("travel dates") || lower.includes("when are you") || lower.includes("start date")) {
-      options.push("2026-08-10 to 2026-08-15");
-      options.push("2026-09-12 to 2026-09-15");
-      options.push("2026-10-10 to 2026-10-15");
-      options.push("2026-12-20 to 2026-12-25");
+    // 2. Action Confirmation
+    if (lower.includes("confirm") || lower.includes("proceed") || lower.includes("ready to book") || lower.includes("shall i proceed")) {
+      return [
+        { label: "Confirm and Book", value: "Yes, confirm and proceed with booking" },
+        { label: "Cancel Request", value: "No, cancel this request" }
+      ];
     }
 
-    // 3. Destination / Where detector
-    if (lower.includes("destination") || lower.includes("where would you like") || lower.includes("which city") || lower.includes("travel to") || lower.includes("trip to") || lower.includes("where to") || lower.includes("place")) {
-      options.push("Udaipur");
-      options.push("Goa");
-      options.push("Bali");
-      options.push("Paris");
-      options.push("Tokyo");
-      options.push("Manali");
-      options.push("Jaipur");
-      options.push("London");
+    // 3. Cancellation Confirm/Keep
+    if (lower.includes("confirm cancellation") || lower.includes("keep booking")) {
+      return [
+        { label: "Confirm Cancellation", value: "Yes, confirm cancellation" },
+        { label: "Keep Booking", value: "No, keep booking" }
+      ];
     }
 
-    // 4. Passport expiry detector
-    if (lower.includes("passport") || lower.includes("expiry") || lower.includes("valid until")) {
-      options.push("2028-12-31");
-      options.push("2030-05-15");
-      options.push("2032-08-20");
-    }
-
-    // 5. Action Confirmation detector
-    if (lower.includes("confirm") || lower.includes("proceed") || lower.includes("would you like me to") || lower.includes("ready to book") || lower.includes("shall i proceed")) {
-      options.push("Yes, confirm and proceed with booking");
-      options.push("No, cancel this request");
-    }
-
-    // 6. Cancellation detector
-    if (lower.includes("cancel") || lower.includes("cancellation") || lower.includes("delete booking") || lower.includes("keep booking")) {
-      options.push("Yes, confirm cancellation");
-      options.push("No, keep booking");
-    }
-
-    // 7. General starter / help fallback
-    if (options.length === 0) {
-      if (lower.includes("hello") || lower.includes("welcome") || lower.includes("assist") || lower.includes("help")) {
-        options.push("Book a new trip");
-        options.push("Cancel an active trip");
-        options.push("Check my trip weather");
+    // 4. Active trips list for cancellation
+    if (lower.includes("booking id") || lower.includes("cancel")) {
+      const tripRegex = /Booking ID:\s*([a-f0-9]+)\s*\|\s*Destination:\s*([A-Za-z\s]+)/gi;
+      let match;
+      while ((match = tripRegex.exec(text)) !== null) {
+        const id = match[1].trim();
+        const dest = match[2].trim();
+        options.push({
+          label: `Cancel ${dest} Trip`,
+          value: `Cancel booking ${id}`
+        });
       }
+      if (options.length > 0) return options.slice(0, 6);
     }
 
-    return Array.from(new Set(options)).slice(0, 6);
+    // 5. Passport Expiry
+    if (lower.includes("passport") || lower.includes("expiry") || lower.includes("valid until")) {
+      const dates = ["2028-12-31", "2030-05-15", "2032-08-20"];
+      return dates.map(d => ({ label: d, value: d }));
+    }
+
+    // 6. Dates / Check-in
+    if (lower.includes("check-in") || lower.includes("check-out") || lower.includes("dates") || lower.includes("when are you")) {
+      const dates = [
+        "2026-08-10 to 2026-08-15",
+        "2026-09-12 to 2026-09-15",
+        "2026-10-10 to 2026-10-15",
+        "2026-12-20 to 2026-12-25"
+      ];
+      return dates.map(d => ({ label: d, value: d }));
+    }
+
+    // 7. Destination
+    if (lower.includes("destination") || lower.includes("where would you like") || lower.includes("which city") || lower.includes("travel to") || lower.includes("where to")) {
+      const dests = ["Udaipur", "Goa", "Bali", "Paris", "Tokyo", "Manali", "Jaipur", "London"];
+      return dests.map(d => ({ label: d, value: d }));
+    }
+
+    // 8. General Starter fallback
+    if (lower.includes("hello") || lower.includes("welcome") || lower.includes("assist") || lower.includes("help")) {
+      return [
+        { label: "Book a trip", value: "Book a trip" },
+        { label: "Cancel an active trip", value: "Cancel an active trip" },
+        { label: "Check my trip weather", value: "Check my trip weather" }
+      ];
+    }
+
+    return [];
   }
 
   const defaultStarterOptions = [
-    "Book a trip to Udaipur",
-    "Book a trip to Paris",
+    "Book a trip",
     "Check weather for my trip",
     "Cancel an active trip",
   ];
@@ -175,7 +202,7 @@ function FloatingChatWidget() {
               <Sparkles className="w-5 h-5 text-blue-100" />
               <div>
                 <h3 className="font-bold text-sm leading-none">Journie Assistant</h3>
-                <span className="text-[10px] text-blue-100">Live 100% Clickable Agent</span>
+                <span className="text-[10px] text-blue-100">Your Travel Genie</span>
               </div>
             </div>
             <button
@@ -257,13 +284,13 @@ function FloatingChatWidget() {
                     {/* Render 100% Clickable Option Chips */}
                     {isLastAssistant && options.length > 0 && (
                       <div className="mt-2.5 flex flex-wrap gap-1.5 max-w-[92%] pl-1">
-                        {options.map((optText, optIdx) => (
+                        {options.map((opt, optIdx) => (
                           <button
                             key={optIdx}
-                            onClick={() => sendMessage(optText)}
+                            onClick={() => sendMessage(opt.value)}
                             className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-3 py-1.5 rounded-full border border-blue-200 transition-all hover:scale-102 cursor-pointer shadow-2xs flex items-center gap-1"
                           >
-                            <span>{optText}</span>
+                            <span>{opt.label}</span>
                           </button>
                         ))}
                       </div>

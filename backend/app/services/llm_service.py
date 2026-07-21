@@ -309,6 +309,42 @@ def _clean_response(text: str) -> str:
     return cleaned
 
 
+async def _intercept_and_execute_tool(text: str, messages: list, tool_map: dict, model) -> str:
+    if not text:
+        return text
+    if any(fn in text for fn in ["create_booking", "cancel_booking", "search_hotels", "get_weather", "get_user_trips"]):
+        import re, json, ast
+        tool_match = re.search(r"(create_booking|cancel_booking|search_hotels|get_weather|get_user_trips)\s*(?:(?:args\s*=\s*)?\(?\s*(\{.*?\})\s*\)?)?", text, re.DOTALL)
+        if tool_match:
+            fn_name = tool_match.group(1)
+            raw_args = tool_match.group(2) if tool_match.group(2) else "{}"
+            try:
+                fn_args = json.loads(raw_args)
+            except Exception:
+                try:
+                    fn_args = ast.literal_eval(raw_args)
+                except Exception:
+                    fn_args = {}
+
+            tool_func = tool_map.get(fn_name)
+            if tool_func:
+                try:
+                    tool_output = await tool_func.ainvoke(fn_args)
+                except Exception:
+                    if hasattr(tool_func, "coroutine") and callable(tool_func.coroutine):
+                        tool_output = await tool_func.coroutine(**fn_args)
+                    else:
+                        raise
+                messages.append(AIMessage(content=text))
+                messages.append(SystemMessage(content=f"Result from tool: {tool_output}\nPlease summarize this result into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
+                try:
+                    res = await model.ainvoke(messages)
+                except Exception:
+                    res = await fallback_model.ainvoke(messages)
+                return res.content
+    return text
+
+
 async def run_agent_chat(system_prompt: str, user_message: str, chat_history: list[BaseMessage], user_id: str) -> str:
     from langchain_core.messages import ToolMessage
 
@@ -485,6 +521,9 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             step += 1
             res = await llm_with_tools.ainvoke(messages)
             
+        # Intercept plain text tool calls outputted by LLM (e.g. 'create_booking {...}')
+        res.content = await _intercept_and_execute_tool(res.content, messages, tool_map, chat_model)
+
         if res.content and res.content.strip():
             return _clean_response(res.content)
         if messages and isinstance(messages[-1], ToolMessage):
@@ -492,6 +531,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                 messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
                 summary_res = await chat_model.ainvoke(messages)
                 if summary_res.content and summary_res.content.strip():
+                    summary_res.content = await _intercept_and_execute_tool(summary_res.content, messages, tool_map, chat_model)
                     return _clean_response(summary_res.content)
             except Exception as summary_err:
                 print(f"[summary generation error]: {summary_err}")
@@ -546,6 +586,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                         res = await chat_model.ainvoke(messages)
                     except Exception:
                         res = await fallback_model.ainvoke(messages)
+                    res.content = await _intercept_and_execute_tool(res.content, messages, tool_map, chat_model)
                     return _clean_response(res.content)
                 else:
                     # Model hallucinated an unresolvable tool name; answer conversationally in standard markdown
@@ -554,6 +595,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                         fallback_messages.extend(chat_history)
                         fallback_messages.append(HumanMessage(content=user_message))
                         res = await fallback_model.ainvoke(fallback_messages)
+                        res.content = await _intercept_and_execute_tool(res.content, messages, tool_map, fallback_model)
                         return _clean_response(res.content)
                     except Exception:
                         pass
@@ -588,6 +630,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                         step += 1
                         res = await alt_llm_with_tools.ainvoke(messages)
                         
+                    res.content = await _intercept_and_execute_tool(res.content, messages, tool_map, alt_model)
                     if res.content and res.content.strip():
                         return _clean_response(res.content)
                     if messages and isinstance(messages[-1], ToolMessage):
@@ -595,6 +638,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                             messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted markdown response for the user, including all key details (names, prices, ratings, dates, or weather). Do not omit key details. Do not use any emojis."))
                             summary_res = await alt_model.ainvoke(messages)
                             if summary_res.content and summary_res.content.strip():
+                                summary_res.content = await _intercept_and_execute_tool(summary_res.content, messages, tool_map, alt_model)
                                 return _clean_response(summary_res.content)
                         except Exception:
                             pass
@@ -610,6 +654,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                 fallback_messages.append(HumanMessage(content=user_message))
                 res = await alt_model.ainvoke(fallback_messages)
                 if res.content and res.content.strip():
+                    res.content = await _intercept_and_execute_tool(res.content, fallback_messages, tool_map, alt_model)
                     return _clean_response(res.content)
             except Exception as fb_err:
                 print(f"[fallback model attempt failed]: {fb_err}")
