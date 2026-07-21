@@ -20,6 +20,16 @@ const DESTINATION_IMAGES = {
   Bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80",
   Switzerland: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=600&q=80",
   Maldives: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=600&q=80",
+  Andaman: "https://images.unsplash.com/photo-1589307078059-be1415eab4c3?auto=format&fit=crop&w=600&q=80",
+  Lakshadweep: "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=600&q=80",
+  Ladakh: "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&w=600&q=80",
+  Darjeeling: "https://images.unsplash.com/photo-1557002666-61a8828a276f?auto=format&fit=crop&w=600&q=80",
+  Vietnam: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=600&q=80",
+  "Sri Lanka": "https://images.unsplash.com/photo-1588598126714-c49b56f8f533?auto=format&fit=crop&w=600&q=80",
+  "South Korea": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=600&q=80",
+  Turkey: "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=600&q=80",
+  Spain: "https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=600&q=80",
+  Germany: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=600&q=80",
   Default: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80"
 };
 
@@ -28,7 +38,9 @@ function Dashboard() {
   const [destinations] = useState([
     "Tokyo", "Paris", "London", "Rome", "New York", 
     "Goa", "Manali", "Jaipur", "Udaipur", "Kerala", "Rishikesh", 
-    "Thailand", "Dubai", "Singapore", "Bali", "Switzerland", "Maldives"
+    "Andaman", "Lakshadweep", "Ladakh", "Darjeeling",
+    "Thailand", "Dubai", "Singapore", "Bali", "Switzerland", "Maldives",
+    "Vietnam", "Sri Lanka", "South Korea", "Turkey", "Spain", "Germany"
   ]);
   const [hotels, setHotels] = useState([]);
   

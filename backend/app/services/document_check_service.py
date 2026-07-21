@@ -34,7 +34,12 @@ PASSPORT_VALIDITY_MAP = {
     "dubai": {"country": "United Arab Emirates", "days": 180, "visa": "Visa on arrival or pre-arranged tourist visa depending on nationality."},
     "bali": {"country": "Indonesia", "days": 180, "visa": "Visa on Arrival (VoA) required for tourist stays up to 30 days."},
     "indonesia": {"country": "Indonesia", "days": 180, "visa": "Visa on Arrival (VoA) required for tourist stays up to 30 days."},
-    "maldives": {"country": "Maldives", "days": 180, "visa": "Free 30-day visa on arrival for all nationalities."}
+    "maldives": {"country": "Maldives", "days": 180, "visa": "Free 30-day visa on arrival for all nationalities."},
+    "vietnam": {"country": "Vietnam", "days": 180, "visa": "e-Visa or tourist visa required before travel."},
+    "sri lanka": {"country": "Sri Lanka", "days": 180, "visa": "ETA or tourist visa required before arrival."},
+    "south korea": {"country": "South Korea", "days": 180, "visa": "K-ETA or tourist visa required."},
+    "korea": {"country": "South Korea", "days": 180, "visa": "K-ETA or tourist visa required."},
+    "turkey": {"country": "Turkey", "days": 180, "visa": "e-Visa or sticker visa required before arrival."}
 }
 
 async def perform_document_check(
@@ -47,7 +52,7 @@ async def perform_document_check(
     dest_key = destination.strip().lower()
     
     # Skip checks entirely for domestic destinations
-    DOMESTIC_DESTINATIONS = {"goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh"}
+    DOMESTIC_DESTINATIONS = {"goa", "manali", "jaipur", "udaipur", "kerala", "rishikesh", "andaman", "lakshadweep", "ladakh", "darjeeling"}
     if dest_key in DOMESTIC_DESTINATIONS:
         check_doc = {
             "booking_id": booking_id,

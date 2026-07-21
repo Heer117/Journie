@@ -77,6 +77,46 @@ DESTINATION_IMAGES = {
     "Maldives": [
         "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=600&auto=format&fit=crop&q=60",
         "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Andaman": [
+        "https://images.unsplash.com/photo-1589307078059-be1415eab4c3?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Lakshadweep": [
+        "https://images.unsplash.com/photo-1546548970-71785318a17b?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Ladakh": [
+        "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1614531341773-3bef8ca734b4?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Darjeeling": [
+        "https://images.unsplash.com/photo-1557002666-61a8828a276f?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1563889362352-b0492c224f62?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Vietnam": [
+        "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1528127269322-539801943592?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Sri Lanka": [
+        "https://images.unsplash.com/photo-1588598126714-c49b56f8f533?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1563189331-1ab472413155?w=600&auto=format&fit=crop&q=60"
+    ],
+    "South Korea": [
+        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Turkey": [
+        "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1527838832702-595665482275?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Spain": [
+        "https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?w=600&auto=format&fit=crop&q=60"
+    ],
+    "Germany": [
+        "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=600&auto=format&fit=crop&q=60",
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=60"
     ]
 }
 
@@ -203,15 +243,76 @@ add_hotel("Maafushi Village Guest House", "Maldives", 65, 4.1, "Charming budget 
 add_hotel("Arena Beach Hotel", "Maldives", 130, 4.4, "Modern beachfront hotel featuring rooftop pool and sunset views.", ["mid-range", "beach", "pool", "views", "wifi"])
 
 
+# Andaman
+add_hotel("Andaman Palace", "Andaman", 3000, 4.1, "Budget guest house near Port Blair with basic comforts and clean rooms.", ["budget", "near-transit", "wifi"])
+add_hotel("Taj Exotica Resort & Spa, Andaman", "Andaman", 25000, 4.9, "Ultra-luxury villas set on Radhanagar Beach, surrounded by lush rainforest.", ["luxury", "spa", "pool", "beach", "wifi"])
+add_hotel("Havelock Island Beach Resort", "Andaman", 8000, 4.4, "Mid-range beachfront resort with sea-facing rooms, pools, and activities.", ["mid-range", "pool", "beach", "wifi"])
+add_hotel("Barefoot at Havelock", "Andaman", 14000, 4.6, "Eco-friendly luxury resort offering rustic-chic cottages nestled in nature.", ["luxury", "beach", "views", "romantic", "wifi"])
+
+# Lakshadweep
+add_hotel("Bangaram Island Resort", "Lakshadweep", 15000, 4.7, "Exclusive beachfront resort offering absolute privacy on a pristine lagoon.", ["luxury", "beach", "views", "romantic", "wifi"])
+add_hotel("Agatti Island Beach Resort", "Lakshadweep", 7500, 4.3, "Comfortable mid-range beachfront stays with watersports and direct lagoon access.", ["mid-range", "beach", "pool", "wifi"])
+add_hotel("Kadmat Beach Resort", "Lakshadweep", 6000, 4.2, "Scenic beach resort operated with excellent diving and snorkeling facilities.", ["mid-range", "beach", "views"])
+add_hotel("Seabreeze Guest House", "Lakshadweep", 2200, 4.0, "Simple budget rooms with friendly local hospitality near Agatti pier.", ["budget", "wifi"])
+
+# Ladakh
+add_hotel("The Grand Dragon Ladakh", "Ladakh", 11000, 4.8, "Premier luxury hotel offering spectacular views of the cold desert mountains.", ["luxury", "views", "spa", "city-center", "wifi"])
+add_hotel("Gomang Boutique Hotel", "Ladakh", 6000, 4.4, "Charming boutique hotel with a library and mountain view terraces.", ["mid-range", "views", "library", "wifi"])
+add_hotel("Leh Heritage Hostel", "Ladakh", 1200, 4.1, "Clean and cozy backpacker hostel in Leh with mountain views and social garden.", ["budget", "social", "solo-traveler", "wifi"])
+add_hotel("Hotel Singge Palace", "Ladakh", 5000, 4.3, "Traditional design hotel located close to Leh's main markets.", ["mid-range", "city-center", "historic", "wifi"])
+
+# Darjeeling
+add_hotel("Mayfair Darjeeling", "Darjeeling", 12000, 4.7, "Stately heritage luxury hotel overlooking the scenic tea valley hills.", ["luxury", "historic", "views", "spa", "wifi"])
+add_hotel("Windamere Hotel", "Darjeeling", 9500, 4.5, "Famous historic hotel offering a charming colonial era vibe and classic tea service.", ["luxury", "historic", "views", "romantic", "wifi"])
+add_hotel("Elgin Darjeeling", "Darjeeling", 6500, 4.4, "Heritage mid-range luxury resort celebrating classic Tibetan decor and design.", ["mid-range", "historic", "spa", "wifi"])
+add_hotel("Darjeeling Tourist Lodge", "Darjeeling", 2200, 4.0, "Simple budget lodge operated by local tourism with basic amenities and nice views.", ["budget", "views"])
+
+# Vietnam
+add_hotel("Sofitel Legend Metropole Hanoi", "Vietnam", 320, 4.9, "Legendary French-colonial style palace hotel in the heart of Hanoi.", ["luxury", "historic", "spa", "pool", "wifi"])
+add_hotel("Hoi An Ancient House Resort", "Vietnam", 85, 4.4, "Charming resort inspired by old clay houses with pools and garden views.", ["mid-range", "pool", "garden", "wifi"])
+add_hotel("Hanoi Backpacker Hostel", "Vietnam", 18, 4.2, "Social budget hostel with free city tours and vibrant rooftop bar.", ["budget", "social", "solo-traveler", "bar", "wifi"])
+add_hotel("Fusion Suites Saigon", "Vietnam", 120, 4.5, "Chic, modern suites in Ho Chi Minh City featuring daily massage credits.", ["mid-range", "spa", "city-center", "wifi"])
+
+# Sri Lanka
+add_hotel("Amangalla, Galle", "Sri Lanka", 600, 4.9, "Ultra-luxury historic sanctuary situated inside the historic Galle Fort walls.", ["luxury", "historic", "spa", "pool", "wifi"])
+add_hotel("Cinnamon Grand Colombo", "Sri Lanka", 110, 4.4, "Vibrant mid-range city hotel with premium dining, spa, and pool services.", ["mid-range", "pool", "spa", "city-center", "wifi"])
+add_hotel("Colombo City Hostel", "Sri Lanka", 15, 4.1, "Lively budget backpacker hub with social common rooms and local tours.", ["budget", "social", "solo-traveler", "wifi"])
+add_hotel("Heritance Kandalama", "Sri Lanka", 220, 4.7, "Stunning luxury hotel designed by Geoffrey Bawa, built into a jungle cliffside.", ["luxury", "pool", "views", "design", "wifi"])
+
+# South Korea
+add_hotel("Four Seasons Hotel Seoul", "South Korea", 450, 4.8, "State-of-the-art luxury hotel with panoramic views of Gyeongbokgung Palace.", ["luxury", "views", "spa", "pool", "wifi"])
+add_hotel("Nine Tree Premier Hotel Myeongdong", "South Korea", 110, 4.4, "Modern high-rise hotel located directly inside Myeongdong shopping district.", ["mid-range", "city-center", "near-transit", "wifi"])
+add_hotel("Hongdae Guesthouse", "South Korea", 25, 4.2, "Social budget option situated in the center of Hongdae's youthful art street.", ["budget", "social", "solo-traveler", "wifi"])
+add_hotel("Lotte Hotel World", "South Korea", 260, 4.6, "Premium hotel directly connected to Lotte World theme park and lake.", ["luxury", "pool", "family-friendly", "views", "wifi"])
+
+# Turkey
+add_hotel("Four Seasons Hotel Istanbul at Sultanahmet", "Turkey", 550, 4.9, "Luxury boutique hotel set inside a converted century-old neoclassic prison.", ["luxury", "historic", "spa", "city-center", "wifi"])
+add_hotel("Ottoman Hotel Imperial", "Turkey", 120, 4.4, "Mid-range boutique lodging offering direct views of Hagia Sophia Museum.", ["mid-range", "historic", "views", "wifi"])
+add_hotel("Istiklal Hostel Istanbul", "Turkey", 22, 4.1, "Budget hostel steps away from Istiklal Street shopping and historic tram.", ["budget", "social", "city-center", "near-transit", "wifi"])
+add_hotel("Caves of Cappadocia Hotel", "Turkey", 180, 4.7, "Authentic luxury cave suites overlooking hot air balloons at sunrise.", ["mid-range", "views", "romantic", "wifi"])
+
+# Spain
+add_hotel("Majestic Hotel & Spa Barcelona", "Spain", 380, 4.8, "Elegant luxury palace hotel set on Passeig de Gracia with rooftop pool.", ["luxury", "spa", "pool", "rooftop", "views", "wifi"])
+add_hotel("Hotel Jazz Barcelona", "Spain", 150, 4.4, "Modern mid-range hotel steps from Plaza Catalunya with rooftop terrace.", ["mid-range", "pool", "rooftop", "city-center", "wifi"])
+add_hotel("Generator Barcelona Hostel", "Spain", 35, 4.1, "Artistic budget boutique hostel with a colorful lounge and social bar.", ["budget", "social", "solo-traveler", "bar", "wifi"])
+add_hotel("W Barcelona", "Spain", 450, 4.7, "Iconic sail-shaped luxury hotel directly on Barceloneta Beach.", ["luxury", "pool", "beach", "views", "wifi"])
+
+# Germany
+add_hotel("Hotel Adlon Kempinski Berlin", "Germany", 500, 4.9, "Historic grand luxury hotel located adjacent to the Brandenburg Gate.", ["luxury", "historic", "spa", "pool", "wifi"])
+add_hotel("Leonardo Hotel Berlin", "Germany", 120, 4.2, "Cozy mid-range hotel located close to Kurfurstendamm shopping street.", ["mid-range", "near-transit", "wifi"])
+add_hotel("Circus Hostel Berlin", "Germany", 30, 4.3, "Famous budget hostel with its own microbrewery and city tour maps.", ["budget", "social", "solo-traveler", "bar", "wifi"])
+add_hotel("Grand Hyatt Berlin", "Germany", 280, 4.6, "Luxury modern hotel set in Potsdamer Platz with rooftop wellness club.", ["luxury", "pool", "rooftop", "spa", "wifi"])
+
+
 async def main():
     # Requirement: Show full destination list before generating/updating data
     print("==========================================================")
     print("Starting Hotel Data Seeding Process...")
     print("Full Destination List to be Registered:")
-    print("  - Domestic Destinations (6):")
-    print("      Goa, Manali, Jaipur, Udaipur, Kerala, Rishikesh")
-    print("  - International Destinations (11):")
-    print("      Tokyo, Paris, London, Rome, New York, Thailand, Dubai, Singapore, Bali, Switzerland, Maldives")
+    print("  - Domestic Destinations (10):")
+    print("      Goa, Manali, Jaipur, Udaipur, Kerala, Rishikesh, Andaman, Lakshadweep, Ladakh, Darjeeling")
+    print("  - International Destinations (17):")
+    print("      Tokyo, Paris, London, Rome, New York, Thailand, Dubai, Singapore, Bali, Switzerland, Maldives, Vietnam, Sri Lanka, South Korea, Turkey, Spain, Germany")
     print("==========================================================")
     
     print(f"Upserting {len(HOTELS)} hotels alongside existing dataset...")
