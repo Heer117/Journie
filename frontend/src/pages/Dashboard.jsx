@@ -98,6 +98,15 @@ function Dashboard() {
 
   useEffect(() => {
     fetchBookings();
+
+    // Reload bookings in real-time when chatbot makes modifications
+    const handleBookingUpdate = () => {
+      fetchBookings();
+    };
+    window.addEventListener("booking-updated", handleBookingUpdate);
+    return () => {
+      window.removeEventListener("booking-updated", handleBookingUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -527,44 +536,41 @@ function Dashboard() {
 
         {/* AI Travel Suggestions Card */}
         {selectedDest && startDate && endDate && (
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 animate-in fade-in duration-200">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
-              <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0" />
-              <h4 className="text-md font-semibold text-gray-900">AI Suggestions for {selectedDest}</h4>
+          <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/30 p-4 rounded-xl shadow-xs border border-blue-100 animate-in fade-in duration-200">
+            <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-blue-100/50">
+              <Sparkles className="w-4 h-4 text-blue-500 flex-shrink-0" />
+              <h4 className="text-xs font-bold text-blue-900">Suggestions for {selectedDest}</h4>
             </div>
             
             {loadingSuggestions ? (
-              <div className="space-y-3 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-3 bg-gray-200 rounded w-full"></div>
-                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/4 mt-4"></div>
-                <div className="h-3 bg-gray-200 rounded w-full"></div>
-                <div className="h-3 bg-gray-200 rounded w-4/5"></div>
+              <div className="space-y-2 animate-pulse py-1">
+                <div className="h-3 bg-blue-100/80 rounded w-1/3"></div>
+                <div className="h-2.5 bg-blue-100/80 rounded w-full"></div>
+                <div className="h-2.5 bg-blue-100/80 rounded w-5/6"></div>
               </div>
             ) : suggestionsError ? (
-              <p className="text-sm text-gray-500">{suggestionsError}</p>
+              <p className="text-[11px] text-gray-500">{suggestionsError}</p>
             ) : suggestions ? (
-              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed font-sans">
+              <div className="max-h-48 overflow-y-auto pr-1 text-xs text-gray-700 leading-relaxed font-sans scroll-thin">
                 <ReactMarkdown
                   components={{
-                    h1: ({ node, ...props }) => <h1 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginTop: '0.75rem', marginBottom: '0.25rem', display: 'block', color: '#1f2937' }} {...props} />,
-                    h2: ({ node, ...props }) => <h2 style={{ fontSize: '1rem', fontWeight: 'bold', marginTop: '0.6rem', marginBottom: '0.20rem', display: 'block', color: '#1f2937' }} {...props} />,
-                    h3: ({ node, ...props }) => <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginTop: '0.5rem', marginBottom: '0.15rem', display: 'block', color: '#1f2937' }} {...props} />,
-                    p: ({ node, ...props }) => <p style={{ marginBottom: '0.5rem', display: 'block' }} {...props} />,
-                    ul: ({ node, ...props }) => <ul style={{ listStyleType: 'disc', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
-                    ol: ({ node, ...props }) => <ol style={{ listStyleType: 'decimal', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
-                    li: ({ node, ...props }) => <li style={{ marginBottom: '0.25rem', display: 'list-item' }} {...props} />,
-                    strong: ({ node, ...props }) => <strong style={{ fontWeight: 'bold', color: '#111827' }} {...props} />,
+                    h1: ({ node, ...props }) => <h1 style={{ fontSize: '0.85rem', fontWeight: 'bold', marginTop: '0.4rem', marginBottom: '0.15rem', display: 'block', color: '#1e3a8a' }} {...props} />,
+                    h2: ({ node, ...props }) => <h2 style={{ fontSize: '0.8rem', fontWeight: 'bold', marginTop: '0.35rem', marginBottom: '0.1rem', display: 'block', color: '#1e3a8a' }} {...props} />,
+                    h3: ({ node, ...props }) => <h3 style={{ fontSize: '0.75rem', fontWeight: 'bold', marginTop: '0.3rem', marginBottom: '0.08rem', display: 'block', color: '#1e3a8a' }} {...props} />,
+                    p: ({ node, ...props }) => <p style={{ marginBottom: '0.25rem', display: 'block' }} {...props} />,
+                    ul: ({ node, ...props }) => <ul style={{ listStyleType: 'disc', paddingLeft: '1rem', marginBottom: '0.25rem', display: 'block' }} {...props} />,
+                    ol: ({ node, ...props }) => <ol style={{ listStyleType: 'decimal', paddingLeft: '1rem', marginBottom: '0.25rem', display: 'block' }} {...props} />,
+                    li: ({ node, ...props }) => <li style={{ marginBottom: '0.15rem', display: 'list-item' }} {...props} />,
+                    strong: ({ node, ...props }) => <strong style={{ fontWeight: 'bold', color: '#1e3a8a' }} {...props} />,
                     em: ({ node, ...props }) => <em style={{ fontStyle: 'italic' }} {...props} />,
-                    a: ({ node, ...props }) => <a style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer" {...props} />
+                    a: ({ node, ...props }) => <a style={{ color: '#2563eb', textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer" {...props} />
                   }}
                 >
                   {suggestions}
                 </ReactMarkdown>
               </div>
             ) : (
-              <p className="text-sm text-gray-400">Select valid check-in and check-out dates to load suggestions.</p>
+              <p className="text-[11px] text-gray-400">Select dates to load suggestions.</p>
             )}
           </div>
         )}
