@@ -97,7 +97,7 @@ function FloatingChatWidget() {
     }
 
     // 2. Dates / Check-in detector
-    if (lower.includes("date") || lower.includes("check-in") || lower.includes("when would you like") || lower.includes("travel dates")) {
+    if (lower.includes("date") || lower.includes("check-in") || lower.includes("check-out") || lower.includes("when would you like") || lower.includes("travel dates") || lower.includes("when are you") || lower.includes("start date")) {
       options.push("2026-08-10 to 2026-08-15");
       options.push("2026-09-12 to 2026-09-15");
       options.push("2026-10-10 to 2026-10-15");
@@ -105,7 +105,7 @@ function FloatingChatWidget() {
     }
 
     // 3. Destination / Where detector
-    if (lower.includes("destination") || lower.includes("where would you like") || lower.includes("which city")) {
+    if (lower.includes("destination") || lower.includes("where would you like") || lower.includes("which city") || lower.includes("travel to") || lower.includes("trip to") || lower.includes("where to") || lower.includes("place")) {
       options.push("Udaipur");
       options.push("Goa");
       options.push("Bali");
@@ -117,20 +117,20 @@ function FloatingChatWidget() {
     }
 
     // 4. Passport expiry detector
-    if (lower.includes("passport")) {
+    if (lower.includes("passport") || lower.includes("expiry") || lower.includes("valid until")) {
       options.push("2028-12-31");
       options.push("2030-05-15");
       options.push("2032-08-20");
     }
 
     // 5. Action Confirmation detector
-    if (lower.includes("confirm") || lower.includes("proceed") || lower.includes("would you like me to proceed")) {
+    if (lower.includes("confirm") || lower.includes("proceed") || lower.includes("would you like me to") || lower.includes("ready to book") || lower.includes("shall i proceed")) {
       options.push("Yes, confirm and proceed with booking");
       options.push("No, cancel this request");
     }
 
     // 6. Cancellation detector
-    if (lower.includes("cancel your booking") || lower.includes("confirm cancellation")) {
+    if (lower.includes("cancel") || lower.includes("cancellation") || lower.includes("delete booking") || lower.includes("keep booking")) {
       options.push("Yes, confirm cancellation");
       options.push("No, keep booking");
     }
