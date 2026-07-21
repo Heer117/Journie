@@ -531,3 +531,36 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
         except Exception as fallback_err:
             print(f"[fallback error]: {fallback_err}")
             return "I apologize, but I am currently having trouble retrieving that information. Please try again in a moment."
+
+
+async def get_booking_suggestions_llm(destination: str, start_date: str, end_date: str) -> str:
+    """
+    Direct LLM call to get travel suggestions and seasonal highlights for a destination and dates.
+    """
+    from langchain_core.messages import SystemMessage, HumanMessage
+    
+    prompt = (
+        f"You are a professional travel planner. Generate short, high-value, highly specific travel suggestions "
+        f"for a trip to {destination} from {start_date} to {end_date}.\n\n"
+        f"Your response MUST contain two clearly labeled sections:\n"
+        f"1. **Seasonal Highlights**: What is notable/special about visiting {destination} during this season (month/dates), including weather context, special events, or seasonal sights.\n"
+        f"2. **Recommended Activities**: 3-4 specific local activities, experiences, or sights that are perfect for this time of year.\n\n"
+        f"Format the output beautifully in clean standard Markdown. Do not use any emojis. Keep the entire response under 150 words total."
+    )
+    
+    messages = [
+        SystemMessage(content="You are a helpful, professional travel assistant. Do not use emojis in your response."),
+        HumanMessage(content=prompt)
+    ]
+    
+    try:
+        res = await chat_model.ainvoke(messages)
+        return res.content
+    except Exception as e:
+        print(f"[get_booking_suggestions_llm error]: {e}")
+        try:
+            res = await fallback_model.ainvoke(messages)
+            return res.content
+        except Exception as fallback_err:
+            print(f"[get_booking_suggestions_llm fallback error]: {fallback_err}")
+            return "Unable to retrieve travel suggestions at this time. Please check your dates and try again."

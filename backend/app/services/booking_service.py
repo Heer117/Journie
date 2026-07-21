@@ -170,3 +170,10 @@ async def delete_user_booking(user_id: str, booking_id: str) -> None:
     
     # Clean up associated document check entries for that booking
     await document_checks_collection.delete_many({"booking_id": booking_id})
+
+
+async def get_booking_suggestions(destination: str, start_date: str, end_date: str) -> dict:
+    from app.services.llm_service import get_booking_suggestions_llm
+    
+    suggestions_text = await get_booking_suggestions_llm(destination, start_date, end_date)
+    return {"suggestions": suggestions_text}

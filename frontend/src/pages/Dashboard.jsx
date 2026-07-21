@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Calendar, CreditCard, Compass, CheckCircle2, AlertTriangle, XCircle, Trash2, Users } from "lucide-react";
+import { Calendar, CreditCard, Compass, CheckCircle2, AlertTriangle, XCircle, Trash2, Users, Sparkles } from "lucide-react";
 import apiClient from "../api/client";
+import ReactMarkdown from "react-markdown";
 
 const DESTINATION_IMAGES = {
   Tokyo: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80",
@@ -90,9 +91,65 @@ function Dashboard() {
   // Show Cancelled Filter State
   const [showCancelled, setShowCancelled] = useState(false);
 
+  // AI Suggestions State
+  const [suggestions, setSuggestions] = useState("");
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState("");
+
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    
+    async function fetchSuggestions() {
+      if (!selectedDest || !startDate || !endDate) {
+        setSuggestions("");
+        return;
+      }
+      
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+        return;
+      }
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (start >= end) {
+        return;
+      }
+
+      setLoadingSuggestions(true);
+      setSuggestionsError("");
+      try {
+        const response = await apiClient.get(
+          `/bookings/suggestions?destination=${encodeURIComponent(selectedDest)}&start_date=${startDate}&end_date=${endDate}`
+        );
+        if (active) {
+          setSuggestions(response.data.suggestions);
+        }
+      } catch (err) {
+        console.error("Failed to fetch suggestions:", err);
+        if (active) {
+          setSuggestionsError("Failed to fetch travel suggestions.");
+        }
+      } finally {
+        if (active) {
+          setLoadingSuggestions(false);
+        }
+      }
+    }
+
+    const delayDebounce = setTimeout(() => {
+      fetchSuggestions();
+    }, 600);
+
+    return () => {
+      active = false;
+      clearTimeout(delayDebounce);
+    };
+  }, [selectedDest, startDate, endDate]);
 
   async function fetchBookings(includeCancelled = showCancelled) {
     setLoadingBookings(true);
@@ -281,8 +338,10 @@ function Dashboard() {
       {/* Booking Form and Bookings List layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Book a new trip card */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-fit lg:col-span-1">
+        {/* Left Column containing form and travel suggestions */}
+        <div className="lg:col-span-1 space-y-6 h-fit">
+          {/* Book a new trip card */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold mb-4 text-gray-900">Book a New Trip</h3>
           
           {error && <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>}
@@ -466,8 +525,53 @@ function Dashboard() {
           </form>
         </div>
 
-        {/* Bookings List */}
-        <div className="lg:col-span-2 space-y-4">
+        {/* AI Travel Suggestions Card */}
+        {selectedDest && startDate && endDate && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
+              <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0" />
+              <h4 className="text-md font-semibold text-gray-900">AI Suggestions for {selectedDest}</h4>
+            </div>
+            
+            {loadingSuggestions ? (
+              <div className="space-y-3 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-3 bg-gray-200 rounded w-full"></div>
+                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/4 mt-4"></div>
+                <div className="h-3 bg-gray-200 rounded w-full"></div>
+                <div className="h-3 bg-gray-200 rounded w-4/5"></div>
+              </div>
+            ) : suggestionsError ? (
+              <p className="text-sm text-gray-500">{suggestionsError}</p>
+            ) : suggestions ? (
+              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed font-sans">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ node, ...props }) => <h1 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginTop: '0.75rem', marginBottom: '0.25rem', display: 'block', color: '#1f2937' }} {...props} />,
+                    h2: ({ node, ...props }) => <h2 style={{ fontSize: '1rem', fontWeight: 'bold', marginTop: '0.6rem', marginBottom: '0.20rem', display: 'block', color: '#1f2937' }} {...props} />,
+                    h3: ({ node, ...props }) => <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginTop: '0.5rem', marginBottom: '0.15rem', display: 'block', color: '#1f2937' }} {...props} />,
+                    p: ({ node, ...props }) => <p style={{ marginBottom: '0.5rem', display: 'block' }} {...props} />,
+                    ul: ({ node, ...props }) => <ul style={{ listStyleType: 'disc', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
+                    ol: ({ node, ...props }) => <ol style={{ listStyleType: 'decimal', paddingLeft: '1.25rem', marginBottom: '0.5rem', display: 'block' }} {...props} />,
+                    li: ({ node, ...props }) => <li style={{ marginBottom: '0.25rem', display: 'list-item' }} {...props} />,
+                    strong: ({ node, ...props }) => <strong style={{ fontWeight: 'bold', color: '#111827' }} {...props} />,
+                    em: ({ node, ...props }) => <em style={{ fontStyle: 'italic' }} {...props} />,
+                    a: ({ node, ...props }) => <a style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer" {...props} />
+                  }}
+                >
+                  {suggestions}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">Select valid check-in and check-out dates to load suggestions.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Bookings List */}
+      <div className="lg:col-span-2 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-2">
             <h3 className="text-lg font-semibold text-gray-900">
               {showCancelled ? "Your Cancelled Trips" : "Your Scheduled Trips"}

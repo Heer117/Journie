@@ -25,3 +25,9 @@ async def get_bookings(status: Optional[str] = "active", user_id: str = Depends(
 async def delete_booking(booking_id: str, user_id: str = Depends(get_current_user)):
     await booking_service.delete_user_booking(user_id, booking_id)
     return {"detail": "Booking cancelled successfully"}
+
+
+@router.get("/suggestions")
+async def get_suggestions(destination: str, start_date: str, end_date: str, user_id: str = Depends(get_current_user)):
+    suggestions = await booking_service.get_booking_suggestions(destination, start_date, end_date)
+    return suggestions
