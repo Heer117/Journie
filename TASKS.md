@@ -13,6 +13,7 @@
 - Update PROGRESS.md and commit with a clear message only after each phase
   is manually confirmed working by me
 
+  
   GIT WORKFLOW — follow this exactly for every phase:
 1. Before starting: git checkout develop, then git checkout -b feature/[phase-name]
    (e.g. feature/phase-a-langchain-refactor)
@@ -66,7 +67,31 @@ passport expiry if international) across multiple turns, confirm with the
 user before calling the tool, then execute the booking/cancellation via the
 existing booking_service functions wrapped as tools. Reuse existing
 validation (overlap check, date validation) inside the tool itself so the
-agent can't bypass it.
+agent can't bypass it. 
+ADDITIONAL REQUIREMENT FOR PHASE D
+— real-time dashboard sync for
+agent-booked trips:
+
+When the chatbot agent completes a booking on the user's behalf (via the
+create_booking tool from Phase D), a booking card must appear on the
+Dashboard immediately, without the user needing to refresh the page —
+same as if they'd booked manually through the form. This means:
+
+- The frontend needs a way to know a new booking was just created by the
+  agent while the chat widget is open (e.g. shared state/context update,
+  or a callback the chat widget triggers on the Dashboard component,
+  since both can be mounted at the same time — floating widget over
+  Dashboard)
+- The new card should render using the exact same booking card component
+  already used for manually-created bookings — not a separate/different
+  card style — so agent-booked and manually-booked trips look identical
+  and behave identically (same cancel button, same status display, etc.)
+- Same expectation in reverse: when the agent cancels a booking via the
+  cancel_booking tool, that booking's card must disappear from the active
+  Dashboard view immediately (no refresh needed) and appear in the
+  cancelled bookings view — same soft-delete/status behavior already
+  built for manual cancellations, reusing that exact same mechanism, not
+  a separate cancellation path
 
 ## PHASE E — AI Itinerary Suggestions During Booking (non-chat)
 On the booking form itself (not the chatbot), once a destination and dates

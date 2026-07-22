@@ -10,6 +10,9 @@ from langchain_core.messages import (
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from app.config import settings
+import contextvars
+
+booking_modified_var = contextvars.ContextVar("booking_modified", default=False)
 
 # Initialize ChatGroq models with distinct rate-limit buckets
 chat_model = ChatGroq(
@@ -457,6 +460,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             )
 
             res = await create_user_booking(user_id=user_id, booking_data=booking_data)
+            booking_modified_var.set(True)
             doc_status = res.get("document_check", {}).get("status", "Verified")
             return f"Success! Booking created successfully. Booking ID: `{res['id']}` | Hotel: **{res['hotel_name']}** | Destination: **{res['destination']}** | Dates: **{res['start_date']} to {res['end_date']}** | Document Check: **{doc_status}**."
         except HTTPException as he:
@@ -476,6 +480,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
             from fastapi import HTTPException
             
             await delete_user_booking(user_id=user_id, booking_id=booking_id)
+            booking_modified_var.set(True)
             return f"Success! Booking `{booking_id}` has been successfully cancelled."
         except HTTPException as he:
             return f"Cancellation failed: {he.detail}"

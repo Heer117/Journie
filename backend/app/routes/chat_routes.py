@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from bson import ObjectId
 from app.schemas.chat_schema import ChatRequest, ChatResponse
-from app.services.llm_service import run_agent_chat, deserialize_messages, message_to_dict
+from app.services.llm_service import run_agent_chat, deserialize_messages, message_to_dict, booking_modified_var
 from langchain_core.messages import HumanMessage, AIMessage
 from app.db import conversations_collection, bookings_collection
 from app.utils.dependencies import get_current_user
@@ -92,4 +92,7 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
         upsert=True,
     )
 
-    return ChatResponse(reply=reply_text)
+    booking_updated = booking_modified_var.get()
+    booking_modified_var.set(False)
+
+    return ChatResponse(reply=reply_text, booking_updated=booking_updated)

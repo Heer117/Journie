@@ -40,8 +40,10 @@ function FloatingChatWidget() {
       const assistantMessage = { role: "assistant", content: response.data.reply };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Always fire booking-updated event on any chat reply to keep dashboard perfectly in sync
-      window.dispatchEvent(new CustomEvent("booking-updated"));
+      // Only fire booking-updated event if a booking was actually created or cancelled by the tool
+      if (response.data && response.data.booking_updated) {
+        window.dispatchEvent(new CustomEvent("booking-updated"));
+      }
     } catch (error) {
       console.error("Chat request failed:", error);
       setMessages((prev) => [
