@@ -667,7 +667,21 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
         # Intercept plain text tool calls outputted by LLM (e.g. 'create_booking {...}')
         res.content = await _intercept_and_execute_tool(res.content, messages, tool_map, chat_model)
 
-        if res.content and res.content.strip():
+        details_omitted = False
+        if messages and isinstance(messages[-1], ToolMessage):
+            tool_content = messages[-1].content
+            if "Booking ID:" in tool_content or "Min:" in tool_content or "Max:" in tool_content or "Available hotels" in tool_content:
+                res_lower = (res.content or "").lower()
+                if not res.content or (
+                    "6a" not in res.content 
+                    and "booking id" not in res_lower 
+                    and "min:" not in res_lower 
+                    and "max:" not in res_lower
+                    and "hotel id" not in res_lower
+                ):
+                    details_omitted = True
+
+        if res.content and res.content.strip() and not details_omitted:
             return _clean_response(res.content)
         if messages and isinstance(messages[-1], ToolMessage):
             try:

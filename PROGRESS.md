@@ -1,6 +1,12 @@
 # Journie Progress Log
 
-## Status: Phase E (AI Travel Suggestions During Booking) Completed
+## Status: Phase F (AI-ify Group Consensus Planner) Completed
+
+### Phase F: AI-ify Group Consensus Planner (July 24, 2026)
+- **Semantic Preference Matching**: Upgraded the group consensus matching in `group_trip_service.py` to leverage the LLM for semantic tag overlaps (e.g. mapping traveler prefers "swimming pool" to hotel's "pool" or "quiet" to "peaceful").
+- **Budget Compromise Suggestions**: Implemented safety floor deterministic checks that prevent recommendations breaking hard budget splits, coupled with active LLM compromises (proposing budget adjustments or duration reductions) when no hotels fit everyone's budget.
+- **Custom Reasoning Generation**: Direct LLM JSON schema responses generating structured explanations highlighting specific travelers' preference matches.
+- **Verification**: Created and executed `scripts/test_phase_f_semantics.py` validating semantic preference mapping and Paris budget compromise. All tests passed.
 
 ### Phase E: AI Travel Suggestions During Booking (July 21, 2026)
 - **Direct Suggestions Service:** Created `get_booking_suggestions_llm` in `llm_service.py` and `get_booking_suggestions` in `booking_service.py` using direct LLM prompts to synthesize seasonal highlights and recommended activities for any destination and date range.

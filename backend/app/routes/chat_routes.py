@@ -28,6 +28,7 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
         "searching tourist sights (`search_places`), searching available hotels (`search_hotels`), creating bookings (`create_booking`), "
         "and cancelling bookings (`cancel_booking`).\n\n"
         "CONVERSATIONAL AGENT INSTRUCTIONS:\n"
+        "0. NO HALLUCINATION / MANDATORY TOOL CALLS: You are STRICTLY FORBIDDEN from guessing, making up, or generating mock trip lists, booking details, weather forecasts, or hotel lists. If the user asks about their trips, upcoming travels, weather, or hotels, you MUST call the appropriate tool (`get_user_trips`, `get_weather`, `search_hotels`) to retrieve the real database data. Never output fake JSON/markdown lists or tool descriptions as your text reply.\n"
         "1. TONE AND LENGTH: Always respond in a warm, helpful, and professional travel assistant tone. "
         "Keep your comments concise and direct. During the step-by-step information gathering turns, ask exactly one question at a time. "
         "However, when displaying data fetched from tools (such as hotel lists, booking lists, weather details, or attraction search results), "
