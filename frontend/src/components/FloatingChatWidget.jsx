@@ -19,6 +19,18 @@ function FloatingChatWidget() {
     }
   }, [messages, isOpen, loading]);
 
+  // Sync bookings on drawer close
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (!isOpen) {
+      window.dispatchEvent(new CustomEvent("booking-updated"));
+    }
+  }, [isOpen]);
+
   if (!isAuthenticated) {
     return null;
   }

@@ -12,6 +12,8 @@ import os
 cors_origins = [
     "http://localhost:5173",  # Vite's default dev server port
     "http://127.0.0.1:5173",  # Vite served on loopback IP
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
 ]
 env_origins = os.getenv("CORS_ORIGINS")
 if env_origins:
