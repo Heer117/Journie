@@ -77,19 +77,24 @@ function FloatingChatWidget() {
   // Extract 100% clickable options/chips for EVERY step
   function getQuickReplyOptions(text) {
     if (!text) return [];
-    const lower = text.toLowerCase();
+    const fullLower = text.toLowerCase();
+    
+    // Extract the final conversational question/line to check context keywords
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    const lastLine = lines.length > 0 ? lines[lines.length - 1] : "";
+    const lower = lastLine.toLowerCase();
 
     // 0. Stop displaying options if task is successfully complete
     if (
-      lower.includes("booking confirmed") ||
-      lower.includes("successfully created") ||
-      lower.includes("trip has been booked") ||
-      lower.includes("successfully cancelled") ||
-      lower.includes("cancellation has been confirmed") ||
-      lower.includes("booking has been cancelled") ||
-      lower.includes("cancelled successfully") ||
-      lower.includes("here is the weather forecast") ||
-      (lower.includes("booking id") && (lower.includes("created") || lower.includes("success") || lower.includes("confirm")))
+      fullLower.includes("booking confirmed") ||
+      fullLower.includes("successfully created") ||
+      fullLower.includes("trip has been booked") ||
+      fullLower.includes("successfully cancelled") ||
+      fullLower.includes("cancellation has been confirmed") ||
+      fullLower.includes("booking has been cancelled") ||
+      fullLower.includes("cancelled successfully") ||
+      fullLower.includes("here is the weather forecast") ||
+      (fullLower.includes("booking id") && (fullLower.includes("created") || fullLower.includes("success") || fullLower.includes("confirm")))
     ) {
       return [];
     }
@@ -97,7 +102,7 @@ function FloatingChatWidget() {
     const options = [];
 
     // 1. Hotel selection (highest priority if hotel is mentioned or listed)
-    if (lower.includes("which hotel") || lower.includes("hotel preference") || lower.includes("select a hotel") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
+    if (fullLower.includes("which hotel") || fullLower.includes("hotel preference") || fullLower.includes("select a hotel") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
       const listLineRegex = /^\s*(?:\d+\.|\*|-)\s+\*\*(.*?)\*\*/gm;
       let listMatch;
       while ((listMatch = listLineRegex.exec(text)) !== null) {
@@ -137,7 +142,7 @@ function FloatingChatWidget() {
     }
 
     // 4. Active trips list for cancellation
-    if (lower.includes("booking id") || lower.includes("cancel")) {
+    if (fullLower.includes("booking id") || fullLower.includes("cancel")) {
       const tripRegex = /Booking ID:\s*([a-f0-9]+)\s*\|\s*Destination:\s*([A-Za-z\s]+)/gi;
       let match;
       while ((match = tripRegex.exec(text)) !== null) {

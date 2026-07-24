@@ -11,6 +11,11 @@ router = APIRouter()
 
 @router.post("/", response_model=ChatResponse)
 async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
+    clean_msg = (request.message or "").strip().lower()
+    if clean_msg in ["reset", "/reset", "clear", "clear chat", "reset chat", "clear history"]:
+        await conversations_collection.delete_one({"user_id": user_id})
+        return ChatResponse(reply="Your chat history has been successfully reset. How can I help you today?", booking_updated=False)
+
     conversation = await conversations_collection.find_one({"user_id": user_id})
 
     if conversation is None:
@@ -55,7 +60,7 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
         "DO NOT make up or guess destinations or dates.\n"
         "8. DATE FORMAT CONVERSION: Always convert conversational date strings (e.g., '25th July to 30th July', 'Jul 25-30') to YYYY-MM-DD format (e.g., '2026-07-25') "
         "when passing them as arguments to your tools.\n\n"
-        "Structure all responses in clean standard Markdown. Never use emojis anywhere in your output."
+        "Structure all responses in beautiful, premium standard Markdown. Use bolding (`**...**`) for key names, destinations, hotels, booking IDs, dates, and prices. Use italics (`*...*`) for side notes or warnings. Use clean bullet lists or numbered lists for formatting choices, trips, or instructions to make them extremely easy and aesthetic to read. Never use any emojis in your output."
     )
     
     if request.booking_id:
