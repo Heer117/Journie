@@ -157,13 +157,13 @@ function FloatingChatWidget() {
     }
 
     // 5. Passport Expiry
-    if (lower.includes("passport") || lower.includes("expiry") || lower.includes("valid until")) {
+    if (lower.includes("passport expiry") || lower.includes("passport date") || lower.includes("passport valid until") || (lower.includes("passport") && (lower.includes("date") || lower.includes("expiry")))) {
       const dates = ["2028-12-31", "2030-05-15", "2032-08-20"];
       return dates.map(d => ({ label: d, value: d }));
     }
 
     // 6. Dates / Check-in
-    if (lower.includes("check-in") || lower.includes("check-out") || lower.includes("dates") || lower.includes("when are you")) {
+    if (lower.includes("check-in") || lower.includes("check-out") || lower.includes("travel dates") || lower.includes("dates for your trip") || (lower.includes("what") && lower.includes("dates"))) {
       const dates = [
         "2026-08-10 to 2026-08-15",
         "2026-09-12 to 2026-09-15",
@@ -174,7 +174,7 @@ function FloatingChatWidget() {
     }
 
     // 7. Destination
-    if (lower.includes("destination") || lower.includes("where would you like") || lower.includes("which city") || lower.includes("travel to") || lower.includes("where to")) {
+    if (lower.includes("where would you like to travel") || lower.includes("which city") || lower.includes("where to") || lower.includes("destination would you like to visit") || (lower.includes("where") && (lower.includes("travel") || lower.includes("visit") || lower.includes("go")))) {
       const dests = ["Udaipur", "Goa", "Bali", "Paris", "Tokyo", "Manali", "Jaipur", "London"];
       return dests.map(d => ({ label: d, value: d }));
     }
