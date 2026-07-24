@@ -103,7 +103,7 @@ function FloatingChatWidget() {
 
     // 1. Hotel selection (highest priority if hotel is mentioned or listed)
     if (fullLower.includes("which hotel") || fullLower.includes("hotel preference") || fullLower.includes("select a hotel") || text.includes("Price/night") || text.includes("Rating:") || text.includes("Hotel ID:")) {
-      const listLineRegex = /^\s*(?:\d+\.|\*|-)\s+\*\*(.*?)\*\*/gm;
+      const listLineRegex = /^\s*\d+\.\s+\*\*(.*?)\*\*/gm;
       let listMatch;
       while ((listMatch = listLineRegex.exec(text)) !== null) {
         const label = listMatch[1].trim();
