@@ -695,10 +695,12 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                     "You are a helpful travel assistant. The user asked: '{user_msg}'.\n"
                     "Here is the raw data returned by the system:\n"
                     "{tool_output}\n\n"
-                    "You MUST format this raw data into a clean, complete, and highly readable numbered markdown list (e.g. 1. **Destination** — Hotel Name). "
-                    "Do NOT use markdown tables (no '|' and '---' rows). Format each trip as a numbered list item, with its key details underneath as sub-bullets. "
+                    "You MUST format this raw data into a clean, complete, and highly readable numbered markdown list. "
+                    "Do NOT use markdown tables (no '|' and '---' rows). Format each item as a numbered list item. "
+                    "When listing hotels, the main list item header MUST start with the bolded hotel name (e.g. 1. **Hotel Name** — Destination) so they can be selected. Do NOT start the header with the destination city. "
+                    "For trips, use 1. **Destination** — Hotel Name. Format details underneath as sub-bullets. "
                     "To prevent bullet bloat, group Status and Doc Check on the same line (e.g. * **Status**: _Active_ | **Doc Check**: _Ready_). "
-                    "Ensure there is a blank line between each numbered trip to make it beautiful and easy to read. "
+                    "Ensure there is a blank line between each numbered item to make it beautiful and easy to read. "
                     "Include all details (booking IDs, dates, hotels, destinations, or weather forecasts) verbatim. "
                     "Do NOT summarize, hide, or omit any names, IDs, dates, or details. "
                     "End your response with a single, concise question guiding the user. Do not use any emojis. Do not say 'The tool returned' or 'Result from tool'."
@@ -785,7 +787,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                         else:
                             raise
                     messages.append(AIMessage(content=f"Invoking tool with {fn_args}"))
-                    messages.append(SystemMessage(content=f"Result from tool: {tool_output}\nPlease summarize this result into a complete, beautifully formatted numbered markdown list for the user (e.g. 1. **Destination** — Hotel Name). Do NOT use markdown tables. Format details under each numbered item as sub-bullets. To prevent bullet bloat, group Status and Doc Check on the same line (e.g. * **Status**: _Active_ | **Doc Check**: _Ready_). Include all details verbatim. Do not use any emojis. Do not say 'Result from tool' or 'The tool returned'."))
+                    messages.append(SystemMessage(content=f"Result from tool: {tool_output}\nPlease summarize this result into a complete, beautifully formatted numbered markdown list for the user. Do NOT use markdown tables. When listing hotels, the main list item header MUST start with the bolded hotel name (e.g. 1. **Hotel Name** — Destination). Format details under each numbered item as sub-bullets. To prevent bullet bloat, group Status and Doc Check on the same line (e.g. * **Status**: _Active_ | **Doc Check**: _Ready_). Include all details verbatim. Do not use any emojis. Do not say 'Result from tool' or 'The tool returned'."))
                     try:
                         res = await chat_model.ainvoke(messages)
                     except Exception:
@@ -840,7 +842,7 @@ async def run_agent_chat(system_prompt: str, user_message: str, chat_history: li
                         return _clean_response(res.content)
                     if messages and isinstance(messages[-1], ToolMessage):
                         try:
-                            messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted numbered markdown list for the user (e.g., 1. **Destination** — Hotel Name). Do NOT use markdown tables. Format details under each numbered item as sub-bullets, grouping Status and Doc Check on the same line to reduce bullet spam. Include all key details verbatim. Do not use any emojis. Do NOT repeat 'Result from tool' or 'The tool returned'. Just answer directly and conversationally."))
+                            messages.append(SystemMessage(content="Please summarize the tool results into a complete, beautifully formatted numbered markdown list for the user. Do NOT use markdown tables. When listing hotels, the main list item header MUST start with the bolded hotel name (e.g. 1. **Hotel Name** — Destination). Format details under each numbered item as sub-bullets, grouping Status and Doc Check on the same line to reduce bullet spam. Include all key details verbatim. Do not use any emojis. Do NOT repeat 'Result from tool' or 'The tool returned'. Just answer directly and conversationally."))
                             summary_res = await alt_model.ainvoke(messages)
                             if summary_res.content and summary_res.content.strip():
                                 summary_res.content = await _intercept_and_execute_tool(summary_res.content, messages, tool_map, alt_model)
