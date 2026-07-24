@@ -59,7 +59,8 @@ async def chat(request: ChatRequest, user_id: str = Depends(get_current_user)):
         "first call `get_user_trips` to find their active trips, dates, and locations. Then call `get_weather` or `search_places` with the correct destination and dates retrieved. "
         "DO NOT make up or guess destinations or dates.\n"
         "8. DATE FORMAT CONVERSION: Always convert conversational date strings (e.g., '25th July to 30th July', 'Jul 25-30') to YYYY-MM-DD format (e.g., '2026-07-25') "
-        "when passing them as arguments to your tools.\n\n"
+        "when passing them as arguments to your tools.\n"
+        "9. NO PAYMENT HALLUCINATION: Do NOT mention payments, payment links, billing, or invoices. Journie does not handle payments inside this chat. Once the user confirms the booking, you MUST immediately call the `book_trip` tool to create the booking and provide the Booking ID. Never tell the user the booking is pending payment.\n\n"
         "Structure all responses in beautiful, premium standard Markdown. Use bolding (`**...**`) for key names, destinations, hotels, booking IDs, dates, and prices. Use italics (`*...*`) for side notes or warnings. Use clean bullet lists or numbered lists for formatting choices, trips, or instructions to make them extremely easy and aesthetic to read. Never use any emojis in your output."
     )
     
