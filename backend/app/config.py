@@ -9,7 +9,7 @@ class Settings(BaseSettings):
  
     # Groq LLM
     groq_api_key: str
-    groq_model_name: str = "llama-3.1-8b-instant"
+    groq_model_name: str = "openai/gpt-oss-20b"
     
     # SerpAPI
     serpapi_api_key: Optional[str] = None

@@ -16,19 +16,19 @@ booking_modified_var = contextvars.ContextVar("booking_modified", default=False)
 
 # Initialize ChatGroq models with distinct rate-limit buckets
 chat_model = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="openai/gpt-oss-20b",
     api_key=settings.groq_api_key,
     temperature=0.7,
 )
 
 fallback_model = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-120b",
     api_key=settings.groq_api_key,
     temperature=0.7,
 )
 
 gemma_model = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-120b",
     api_key=settings.groq_api_key,
     temperature=0.7,
 )
